@@ -1,6 +1,3 @@
-//Hello world!
-//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
-
 #include<iostream>
 #include <eigen3/Eigen/Dense>
 #include <string>
