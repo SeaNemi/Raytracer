@@ -4,7 +4,6 @@
 #include "Scene.h"
 
 
-
 //Constructor
 Scene::Scene(){
     m_file = "NONE";
@@ -225,10 +224,10 @@ bool Scene::parse(){
                 if ((counter == verticies)){
                     bool makeTriangles = false;
                     if (verticies == 4) {
-                        Eigen::Vector3d n0 = cross(*currPolygon->m_vertex[1] - *currPolygon->m_vertex[0], *currPolygon->m_vertex[2] - *currPolygon->m_vertex[0]);
-                        Eigen::Vector3d n1 = cross(*currPolygon->m_vertex[2] - *currPolygon->m_vertex[1], *currPolygon->m_vertex[3] - *currPolygon->m_vertex[1]);
-                        Eigen::Vector3d n2 = cross(*currPolygon->m_vertex[3] - *currPolygon->m_vertex[2], *currPolygon->m_vertex[0] - *currPolygon->m_vertex[2]);
-                        Eigen::Vector3d n3 = cross(*currPolygon->m_vertex[0] - *currPolygon->m_vertex[3], *currPolygon->m_vertex[1] - *currPolygon->m_vertex[3]);
+                        Vector3d n0 = cross(*currPolygon->m_vertex[1] - *currPolygon->m_vertex[0], *currPolygon->m_vertex[2] - *currPolygon->m_vertex[0]);
+                        Vector3d n1 = cross(*currPolygon->m_vertex[2] - *currPolygon->m_vertex[1], *currPolygon->m_vertex[3] - *currPolygon->m_vertex[1]);
+                        Vector3d n2 = cross(*currPolygon->m_vertex[3] - *currPolygon->m_vertex[2], *currPolygon->m_vertex[0] - *currPolygon->m_vertex[2]);
+                        Vector3d n3 = cross(*currPolygon->m_vertex[0] - *currPolygon->m_vertex[3], *currPolygon->m_vertex[1] - *currPolygon->m_vertex[3]);
                         if (((n0.dot(n1) > 0) && ((n0.dot(n2)) > 0) && (n0.dot(n3) > 0)) || (currPolygon->isTriangle)) {
                             makeTriangles = true;
                         }
@@ -240,9 +239,9 @@ bool Scene::parse(){
                             //supports triangle fanning
                             for (int i = 1; i < (verticies - 1); i++){
                                 Polygon* ptr = new Polygon(3, currPolygon->m_fill, true);
-                                Eigen::Vector3d* a = new Eigen::Vector3d();
-                                Eigen::Vector3d* b = new Eigen::Vector3d();
-                                Eigen::Vector3d* c = new Eigen::Vector3d();
+                                Vector3d* a = new Vector3d();
+                                Vector3d* b = new Vector3d();
+                                Vector3d* c = new Vector3d();
 
                                 //for normal sides
                                 *a = *currPolygon->m_vertex[0];
@@ -277,10 +276,10 @@ bool Scene::parse(){
                 if ((counter == verticies)){
                     bool makeTriangles = false;
                     if (verticies == 4) {
-                        Eigen::Vector3d n0 = cross(*currPatch->m_vertex[1] - *currPatch->m_vertex[0], *currPatch->m_vertex[2] - *currPatch->m_vertex[0]);
-                        Eigen::Vector3d n1 = cross(*currPatch->m_vertex[2] - *currPatch->m_vertex[1], *currPatch->m_vertex[3] - *currPatch->m_vertex[1]);
-                        Eigen::Vector3d n2 = cross(*currPatch->m_vertex[3] - *currPatch->m_vertex[2], *currPatch->m_vertex[0] - *currPatch->m_vertex[2]);
-                        Eigen::Vector3d n3 = cross(*currPatch->m_vertex[0] - *currPatch->m_vertex[3], *currPatch->m_vertex[1] - *currPatch->m_vertex[3]);
+                        Vector3d n0 = cross(*currPatch->m_vertex[1] - *currPatch->m_vertex[0], *currPatch->m_vertex[2] - *currPatch->m_vertex[0]);
+                        Vector3d n1 = cross(*currPatch->m_vertex[2] - *currPatch->m_vertex[1], *currPatch->m_vertex[3] - *currPatch->m_vertex[1]);
+                        Vector3d n2 = cross(*currPatch->m_vertex[3] - *currPatch->m_vertex[2], *currPatch->m_vertex[0] - *currPatch->m_vertex[2]);
+                        Vector3d n3 = cross(*currPatch->m_vertex[0] - *currPatch->m_vertex[3], *currPatch->m_vertex[1] - *currPatch->m_vertex[3]);
                         if (((n0.dot(n1) > 0) && ((n0.dot(n2)) > 0) && (n0.dot(n3) > 0)) || (currPatch->isTriangle)) {
                             makeTriangles = true;
                         }
@@ -292,9 +291,9 @@ bool Scene::parse(){
                         //supports triangle fanning
                         for (int i = 1; i < (verticies - 1); i++){
                             Patch* ptr = new Patch(3, currPatch->m_fill, true);
-                            Eigen::Vector3d* a = new Eigen::Vector3d();
-                            Eigen::Vector3d* b = new Eigen::Vector3d();
-                            Eigen::Vector3d* c = new Eigen::Vector3d();
+                            Vector3d* a = new Vector3d();
+                            Vector3d* b = new Vector3d();
+                            Vector3d* c = new Vector3d();
 
                             //for normal sides
                             *a = *currPatch->m_vertex[0];
@@ -304,9 +303,9 @@ bool Scene::parse(){
                             ptr->pushBackVector(b);
                             ptr->pushBackVector(c);
 
-                            Eigen::Vector3d* x = new Eigen::Vector3d();
-                            Eigen::Vector3d* y = new Eigen::Vector3d();
-                            Eigen::Vector3d* z = new Eigen::Vector3d();
+                            Vector3d* x = new Vector3d();
+                            Vector3d* y = new Vector3d();
+                            Vector3d* z = new Vector3d();
 
                             //now does the normalized vectors
                             *x = (currPatch->m_normal[0]->normalized());
@@ -343,7 +342,7 @@ bool Scene::parse(){
 
 void Scene::setBackground(double r, double g, double b){
     //vector created then set as the background
-    Eigen::Vector3d vector(r, g, b);
+    Vector3d vector(r, g, b);
     m_background = vector;
 }
 

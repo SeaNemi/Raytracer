@@ -7,26 +7,26 @@
 
 //What's included
 #include <iostream>
+#include "matrix.h"
 #include <string>
 #include <vector>
-#include <eigen3/Eigen/Dense>
 
 class Ray{
     public:
-        Ray(Eigen::Vector3d e, Eigen::Vector3d d, int dep = 0);
-        Eigen::Vector3d eye;
-        Eigen::Vector3d dir;
+        Ray(Vector3d e, Vector3d d, int dep = 0);
+        Vector3d eye;
+        Vector3d dir;
         int depth;
 };
 
 class Hit{
     public:
         Hit(){}
-        Hit(double t,double a,double b,double g, Eigen::Vector3d inte, Eigen::Vector3d nor, Eigen::Vector3d vie, int depth);
+        Hit(double t,double a,double b,double g, Vector3d inte, Vector3d nor, Vector3d vie, int depth);
         double t, alpha, beta, gamma;
-        Eigen::Vector3d inter; //determines intersection
-        Eigen::Vector3d norm; //normalized perpendicular to intersection pt
-        Eigen::Vector3d view; //determines the viewing direction
+        Vector3d inter; //determines intersection
+        Vector3d norm; //normalized perpendicular to intersection pt
+        Vector3d view; //determines the viewing direction
         int raydepth; //determines the depth
         void transfer(double fil[8]);
         double fill[8];
@@ -50,11 +50,11 @@ class Polygon: public Surface{
         void clear();
         int getSize();
         void addVertex(double x, double y, double z);
-        void pushBackVector(Eigen::Vector3d*);
+        void pushBackVector(Vector3d*);
         Polygon& operator=(const Polygon& other);
         bool intersect(Ray ray, double &min, double &max, Hit &hr) override;
         int m_verticies;
-        std::vector<Eigen::Vector3d*> m_vertex;
+        std::vector<Vector3d*> m_vertex;
 
         Surface* clone();
         bool isTriangle;
@@ -69,10 +69,10 @@ class Patch: public Polygon{
         Patch(const Patch& rhs);
         ~Patch();
         void addNormal(double x, double y, double z);
-        void pushBackNorm(Eigen::Vector3d* a);
+        void pushBackNorm(Vector3d* a);
         //member variables
-        std::vector<Eigen::Vector3d*> m_normal;
-        Eigen::Vector3d interpolate(Hit hit);
+        std::vector<Vector3d*> m_normal;
+        Vector3d interpolate(Hit hit);
         Surface* clone() override;
 };
 
@@ -88,7 +88,7 @@ class Sphere: public Surface{
         Surface* clone();
 
         //member variables
-        Eigen::Vector3d coords;
+        Vector3d coords;
         double radius;
 };
 
@@ -98,8 +98,8 @@ class Light{
     public:
         Light();
         Light(double x, double y, double z);
-        //Eigen::Vector3d intensity();
-        Eigen::Vector3d coords;
+        //Vector3d intensity();
+        Vector3d coords;
 
 };
 
@@ -121,9 +121,9 @@ class Viewpoint{
 
 
         //doubles for the viewpoint
-        Eigen::Vector3d at;
-        Eigen::Vector3d from;
-        Eigen::Vector3d up;
+        Vector3d at;
+        Vector3d from;
+        Vector3d up;
         double angle;
         double hither;
         double res[2];

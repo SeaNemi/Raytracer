@@ -3,29 +3,15 @@
 
 #include "Objects.h"
 
-//code from professor
-inline double cross2d(const Eigen::Vector2d &x, const Eigen::Vector2d &y) { return x[0]*y[1]-x[1]*y[0]; }
-Eigen::Vector2d project(const Eigen::Vector3d &x, int projectDir) {
-    switch (projectDir) {
-        case 0:
-            return Eigen::Vector2d(x[1],x[2]);
-        case 1:
-            return Eigen::Vector2d(x[0],x[2]);
-        case 2:
-            return Eigen::Vector2d(x[0],x[1]);
-    }
-    return Eigen::Vector2d(1.0, 1.0);
-}
-
 //ray class
-Ray::Ray(Eigen::Vector3d e, Eigen::Vector3d d, int dep){
+Ray::Ray(Vector3d e, Vector3d d, int dep){
     eye = e;
     dir = d;
     depth = dep;
 }
 
 //added this so that way the Raytracer can actually read it
-Hit::Hit(double to,double a,double b,double g, Eigen::Vector3d inte, Eigen::Vector3d nor, Eigen::Vector3d vie,  int depth){
+Hit::Hit(double to,double a,double b,double g, Vector3d inte, Vector3d nor, Vector3d vie,  int depth){
     t = to;
     alpha = a;
     beta = b;
@@ -73,7 +59,7 @@ void Polygon::clear(){
 }
 //adds a vertex side to the polygon
 void Polygon::addVertex(double x, double y, double z){
-    Eigen::Vector3d* vertex = new Eigen::Vector3d(x, y, z);
+    Vector3d* vertex = new Vector3d(x, y, z);
     m_vertex.push_back(vertex);
 }
 
@@ -85,7 +71,7 @@ Polygon::Polygon(const Polygon& rhs){
     }
     
     //for loop pushes back the vectors
-    for (const Eigen::Vector3d* vertex : rhs.m_vertex){
+    for (const Vector3d* vertex : rhs.m_vertex){
         if(vertex == nullptr){
             m_vertex.push_back(nullptr);
         }else{
@@ -109,7 +95,7 @@ Polygon& Polygon::operator=(const Polygon& rhs){
         }
         
         //for loop pushes back the vectors
-        for (const Eigen::Vector3d* vertex : rhs.m_vertex){
+        for (const Vector3d* vertex : rhs.m_vertex){
             if(vertex == nullptr){
                 m_vertex.push_back(nullptr);
             }else{
@@ -125,12 +111,12 @@ Polygon& Polygon::operator=(const Polygon& rhs){
 bool Polygon::intersect(Ray ray, double &min, double &max, Hit &hr){
     if(isTriangle){
         //first matrix set up is matrix a
-        Eigen::Matrix3d matrixA;
+        Matrix3d matrixA;
 
         //the columns are then set based on the book
-        matrixA.col(0) = (*m_vertex[0] - *m_vertex[1]);
-        matrixA.col(1) = (*m_vertex[0] - *m_vertex[2]);
-        matrixA.col(2) = ray.dir;
+        matrixA.col(0, (*m_vertex[0] - *m_vertex[1]));
+        matrixA.col(1, (*m_vertex[0] - *m_vertex[2]));
+        matrixA.col(2, ray.dir);
 
         //determinant taken
         double detA = matrixA.determinant();
@@ -141,10 +127,10 @@ bool Polygon::intersect(Ray ray, double &min, double &max, Hit &hr){
         
         //first value to be solved for is t
         //need to create matrix and then divide
-        Eigen::Matrix3d matrixT;
-        matrixT.col(0) = (*m_vertex[0] - *m_vertex[1]);
-        matrixT.col(1) = (*m_vertex[0] - *m_vertex[2]);
-        matrixT.col(2) = (*m_vertex[0] - ray.eye);
+        Matrix3d matrixT;
+        matrixT.col(0, (*m_vertex[0] - *m_vertex[1]));
+        matrixT.col(1, (*m_vertex[0] - *m_vertex[2]));
+        matrixT.col(2, (*m_vertex[0] - ray.eye));
         double t = matrixT.determinant() / detA;
 
         //that is then compared to the limits
@@ -154,10 +140,10 @@ bool Polygon::intersect(Ray ray, double &min, double &max, Hit &hr){
 
         //next need to solve for upsilon
         //next to be solved for is matrixUpsilon
-        Eigen::Matrix3d matrixUpsilon;
-        matrixUpsilon.col(0) = (*m_vertex[0] - *m_vertex[1]);
-        matrixUpsilon.col(1) = (*m_vertex[0] - ray.eye);
-        matrixUpsilon.col(2) = ray.dir;
+        Matrix3d matrixUpsilon;
+        matrixUpsilon.col(0, (*m_vertex[0] - *m_vertex[1]));
+        matrixUpsilon.col(1, (*m_vertex[0] - ray.eye));
+        matrixUpsilon.col(2, ray.dir);
 
         double upsilon = matrixUpsilon.determinant() / detA;
 
@@ -167,10 +153,10 @@ bool Polygon::intersect(Ray ray, double &min, double &max, Hit &hr){
         }
 
         //finally we need to solve for beta
-        Eigen::Matrix3d matrixBeta;
-        matrixBeta.col(0) = (*m_vertex[0] - ray.eye);
-        matrixBeta.col(1) = (*m_vertex[0] - *m_vertex[2]);
-        matrixBeta.col(2) = ray.dir;
+        Matrix3d matrixBeta;
+        matrixBeta.col(0, (*m_vertex[0] - ray.eye));
+        matrixBeta.col(1, (*m_vertex[0] - *m_vertex[2]));
+        matrixBeta.col(2, ray.dir);
 
         double beta = matrixBeta.determinant() / detA;
 
@@ -193,13 +179,14 @@ bool Polygon::intersect(Ray ray, double &min, double &max, Hit &hr){
         return true;
     }else{
         int projectDir;
-        Eigen::Vector3d n = (*m_vertex[1]- *m_vertex[0]).cross(*m_vertex[2] - *m_vertex[0]);
+        Vector3d n = (*m_vertex[1]- *m_vertex[0]).cross(*m_vertex[2] - *m_vertex[0]);
         n.normalize();
 
         double t = -(ray.eye.dot(n) - m_vertex[0]->dot(n)) / (ray.dir.dot(n));
         if (t < min || t > max) return false;
 
-        Eigen::Vector3d p = ray.eye + t* ray.dir;
+        Vector3d p;
+        p = ray.eye + t * ray.dir;
 
         if (fabs(n[0]) > fabs(n[1]) && fabs(n[0]) > fabs(n[2])) {
             projectDir = 0;
@@ -209,12 +196,13 @@ bool Polygon::intersect(Ray ray, double &min, double &max, Hit &hr){
             projectDir = 2;
         }
         
-        Eigen::Vector2d p2 = project(p, projectDir);
+        //creates two projected vector
+        Vector2d p2(p, projectDir);
+        Vector2d bbMin(*m_vertex[0], projectDir);
 
-        Eigen::Vector2d bbMin = project(*m_vertex[0], projectDir);
-        Eigen::Vector2d bbMax = bbMin;
+        Vector2d bbMax = bbMin;
         for (unsigned int i=1; i<m_vertex.size(); i++) {
-            Eigen::Vector2d v = project(*m_vertex[i], projectDir);
+            Vector2d v(*m_vertex[i], projectDir);
             if (v[0] < bbMin[0]) bbMin[0] = v[0];
             if (v[0] > bbMax[0]) bbMax[0] = v[0];
             if (v[1] < bbMin[1]) bbMin[1] = v[1];
@@ -226,15 +214,17 @@ bool Polygon::intersect(Ray ray, double &min, double &max, Hit &hr){
         if (p2[0] > bbMax[0]) return false;
         if (p2[1] > bbMax[1]) return false;
 
-        Eigen::Vector2d dir(sqrt(2), sqrt(2));
+        Vector2d dir(sqrt(2), sqrt(2));
         int count = 0;
         for (unsigned int i=0; i<m_vertex.size(); i++) {
-            Eigen::Vector2d a = project(*m_vertex[i], projectDir);
-            Eigen::Vector2d b = project(*m_vertex[(i+1) % m_vertex.size()], projectDir);
-            Eigen::Vector2d ab = b-a;
-            double t2 = cross2d(a-p2, ab / cross2d(dir, ab));
+            //two projected vectors are created
+            Vector2d a(*m_vertex[i], projectDir);
+            Vector2d b(*m_vertex[(i+1) % m_vertex.size()], projectDir);
+            Vector2d ab = b-a;
+            Vector2d ap2(a-p2);
+            double t2 = ap2.cross(ab / dir.cross(ab));
             if (t2 < 0.0) continue;
-            double alpha = cross2d(a-p2, dir / cross2d(dir, ab));
+            double alpha = ap2.cross(dir / dir.cross(ab));
             if (alpha > 0.0 && alpha < 1.0) count++;
         }
 
@@ -254,7 +244,7 @@ int Polygon::getSize(){
 }
 
 //pushes back a vertex already in eigen form
-void Polygon::pushBackVector(Eigen::Vector3d* push){
+void Polygon::pushBackVector(Vector3d* push){
     m_vertex.push_back(push);
 }
 
@@ -264,7 +254,7 @@ Surface* Polygon::clone(){
 
 //creates a sphere
 Sphere::Sphere(double x, double y, double z, double r, double fill[8], bool pat){
-    Eigen::Vector3d vector(x, y, z);
+    Vector3d vector(x, y, z);
     coords = vector;
     radius = r;
     for (int i = 0; i < 8; i++){
@@ -275,7 +265,7 @@ Sphere::Sphere(double x, double y, double z, double r, double fill[8], bool pat)
 }
 
 Sphere::Sphere(const Sphere& rhs){
-    Eigen::Vector3d vector(rhs.coords);
+    Vector3d vector(rhs.coords);
     coords = vector;
     radius = rhs.radius;
     for (int i = 0; i < 8; i++){
@@ -294,8 +284,8 @@ bool Sphere::intersect(Ray ray, double &min, double &max, Hit &hr){
     //solving for determinant
     //a is direction dot direction
 
-    Eigen::Vector3d vector = ray.dir - coords;
-    Eigen::Vector3d direction = ray.dir;
+    Vector3d vector = ray.dir - coords;
+    Vector3d direction = ray.dir;
 
     double a = direction.squaredNorm();
     //b is direction dot eye - coords
@@ -338,23 +328,23 @@ bool Sphere::intersect(Ray ray, double &min, double &max, Hit &hr){
 
 //creates a light
 Light::Light(double x, double y, double z){
-    Eigen::Vector3d vector(x, y, z);
+    Vector3d vector(x, y, z);
     coords = vector; 
 }
 
 //All of the setters for viewpoint
 
 void Viewpoint::setAt(double x, double y, double z){
-    Eigen::Vector3d vector(x, y, z);
+    Vector3d vector(x, y, z);
     at = vector; 
 }
 
 void Viewpoint::setFrom(double x, double y, double z){
-    Eigen::Vector3d vector(x, y, z);
+    Vector3d vector(x, y, z);
     from = vector; 
 }
 void Viewpoint::setUp(double x, double y, double z){
-    Eigen::Vector3d vector(x, y, z);
+    Vector3d vector(x, y, z);
     up = vector;
 }
 void Viewpoint::setAngle(double a){
@@ -383,7 +373,7 @@ Patch::Patch(int verticies, double fill[8], bool isTri, bool pat){
 //copy constructor, unsure if necessary but safe to have
 Patch::Patch(const Patch& rhs) : Polygon(rhs){
     for (const auto& norm: rhs.m_normal){
-        m_normal.push_back(new Eigen::Vector3d(*norm));
+        m_normal.push_back(new Vector3d(*norm));
     }
 }
 
@@ -396,12 +386,12 @@ Patch::~Patch(){
 
 //adds a normal vertex to the Patch
 void Patch::addNormal(double x, double y, double z){
-    Eigen::Vector3d* vertex = new Eigen::Vector3d(x, y, z);
+    Vector3d* vertex = new Vector3d(x, y, z);
     m_normal.push_back(vertex);
 }
 
 //push back norma eigenvector
-void Patch::pushBackNorm(Eigen::Vector3d* a){
+void Patch::pushBackNorm(Vector3d* a){
     m_normal.push_back(a);
 }
 
@@ -411,7 +401,9 @@ Surface* Patch::clone(){
 
 //interpolate
 //smoothly shades the patches
-Eigen::Vector3d Patch::interpolate(Hit hit){
-    Eigen::Vector3d normal = (1 - hit.beta - hit.gamma) * *m_normal[0] + hit.beta * *m_normal[1] + hit.gamma * *m_normal[2];
-    return normal;
+Vector3d Patch::interpolate(Hit hit){
+    //Vector3d normal = (1 - hit.beta - hit.gamma) * *m_normal[0] + hit.beta * *m_normal[1] + hit.gamma * *m_normal[2];
+    Vector3d vec;
+    vec = (1 - hit.beta - hit.gamma) * *m_normal[0] + hit.beta * *m_normal[1] + hit.gamma * *m_normal[2];
+    return vec;
 }

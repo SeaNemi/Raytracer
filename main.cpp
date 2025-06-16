@@ -1,6 +1,5 @@
 //William Whatley
 #include<iostream>
-#include <eigen3/Eigen/Dense>
 #include <string>
 #include <getopt.h>
 #include "Raytracer.h"

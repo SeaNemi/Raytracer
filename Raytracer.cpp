@@ -20,7 +20,7 @@ void Raytracer::worldSpace(){
     vecV = vecW.cross(vecU);
     vecV.normalize();
 
-    Eigen::Vector3d temp = m_scene.m_viewpoint->from - m_scene.m_viewpoint->at;
+    Vector3d temp = m_scene.m_viewpoint->from - m_scene.m_viewpoint->at;
     magD = temp.norm();
 
 }
@@ -57,7 +57,7 @@ void Raytracer::createImage(std::string output){
     //image is then begun to be created
     for (int py = 0; py < HEIGHT; py++){
         for (int px = 0; px < WIDTH; px++){
-            Eigen::Vector3d color(0,0,0);
+            Vector3d color(0,0,0);
             //accounting for jittering
             if (stratified){
                 //goes through to account for the samples
@@ -72,7 +72,7 @@ void Raytracer::createImage(std::string output){
                         double y = planeHeight/2 - pixHeight * (py + oy);
 
                         //direction set
-                        Eigen::Vector3d direction;
+                        Vector3d direction;
                         direction = (-1 * magD * vecW);
                         direction = direction + (x * vecU);
                         direction = direction + (y * vecV);
@@ -101,7 +101,7 @@ void Raytracer::createImage(std::string output){
                 pixels[index + 2] = static_cast<unsigned char>(std::min(255.0, std::max(0.0, b * 255)));
             }else{
                 //direction declared
-                Eigen::Vector3d direction;
+                Vector3d direction;
 
                 //first need to calculate direction
                 double x = -planeWidth/2 + pixWidth /2 + px * pixWidth;
@@ -116,7 +116,7 @@ void Raytracer::createImage(std::string output){
                 Ray ray(m_scene.m_viewpoint->from, direction);
 
                 //then determine if any object is hit using colorSet
-                Eigen::Vector3d color = colorSet(ray);
+                Vector3d color = colorSet(ray);
 
                 //index is used to determine what pixels go where
                 int index = (py * WIDTH + px) * 3;
@@ -148,7 +148,7 @@ void Raytracer::createImage(std::string output){
 }
 
 //colorSet determines if the color remains the background color or not
-Eigen::Vector3d Raytracer::colorSet(Ray ray){
+Vector3d Raytracer::colorSet(Ray ray){
     Surface* currSurface = nullptr;
     Hit hr;
 
@@ -161,15 +161,15 @@ Eigen::Vector3d Raytracer::colorSet(Ray ray){
     hr.transfer(currSurface->m_fill);
 
     //local color is determined by the localLight
-    Eigen::Vector3d totalColor = localLight(ray, currSurface, hr);
+    Vector3d totalColor = localLight(ray, currSurface, hr);
 
 
     //if the m_fill[4] of the current surface (which corresponds to ks)
     //or raydepth is less than 5, then continue recursion
     if(hr.fill[4] > 0 && !(ray.depth > 5)){
         //eye and direction are set up
-        Eigen::Vector3d eye = (hr.inter + hr.norm * BIAS);
-        Eigen::Vector3d direction = ray.dir - 2 * (ray.dir.dot(hr.norm)) * hr.norm;
+        Vector3d eye = (hr.inter + hr.norm * BIAS);
+        Vector3d direction = ray.dir - 2 * (ray.dir.dot(hr.norm)) * hr.norm;
         direction.normalize();
         
         //reflectionRay then set up and used for recursion
@@ -183,20 +183,20 @@ Eigen::Vector3d Raytracer::colorSet(Ray ray){
 
 //localLight
 //goes through the local light sources and determines the color vector
-Eigen::Vector3d Raytracer::localLight(Ray ray, Surface* currSurface, Hit& hit){
+Vector3d Raytracer::localLight(Ray ray, Surface* currSurface, Hit& hit){
     //for loop goes through for each light source
-    Eigen::Vector3d localColor(0,0,0);
-    Eigen::Vector3d colorfill(hit.fill[0], hit.fill[1], hit.fill[2]);
+    Vector3d localColor(0,0,0);
+    Vector3d colorfill(hit.fill[0], hit.fill[1], hit.fill[2]);
     for(unsigned int i = 0; i < m_scene.m_lights.size(); i++){
         //the three vectors for Lambert shading are set up
-        Eigen::Vector3d l = (m_scene.m_lights[i]->coords - hit.inter).normalized();
-        Eigen::Vector3d v = -ray.dir.normalized();
-        Eigen::Vector3d h = (l + v).normalized();
+        Vector3d l = (m_scene.m_lights[i]->coords - hit.inter).normalized();
+        Vector3d v = -1 * ray.dir.normalized();
+        Vector3d h = (l + v).normalized();
 
         //checks if the surface is a patch and that m_phong is being used
         if(phong && dynamic_cast<Patch*>(currSurface)){
             Patch* patch = static_cast<Patch*>(currSurface);
-            Eigen::Vector3d normal = patch->interpolate(hit);
+            Vector3d normal = patch->interpolate(hit);
             normal.normalize();
             hit.norm = normal;
         }   

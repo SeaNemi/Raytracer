@@ -14,9 +14,6 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include <eigen3/Eigen/Dense>
-
-inline Eigen::Vector3d cross(const Eigen::Vector3d &x, const Eigen::Vector3d &y) { return x.cross(y); }
 
 //enum used to determine what state the parser is in
 enum class State{
@@ -44,7 +41,7 @@ class Scene{
         void clear();
 
         //member variables
-        Eigen::Vector3d m_background;
+        Vector3d m_background;
         std::vector<Surface*> m_surfaces;
         std::vector<Light*> m_lights;
         Viewpoint* m_viewpoint;
