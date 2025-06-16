@@ -113,4 +113,4 @@ Vector3d& Vector3d::operator=(const Vector3d& vec){
         z = vec.z;
     }
     return *this;
-} 
+}      
