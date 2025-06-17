@@ -10,7 +10,7 @@ Scene::Scene(){
     m_viewpoint = new Viewpoint();
 }
 //Overloaded constructor
-Scene::Scene(std::string file){
+Scene::Scene(const std::string& file){
     m_file = file;
     m_viewpoint = new Viewpoint();
 }
@@ -22,7 +22,6 @@ Scene::~Scene(){
 }
 
 void Scene::clear(){
-
     //deletes based on whether or not it was created in the first place
     for (Surface* surface : m_surfaces){
         delete surface;
@@ -43,7 +42,7 @@ void Scene::clear(){
 }
 
 //sets new file
-void Scene::setFile(std::string file){
+void Scene::setFile(const std::string& file){
     m_file = file;
 }
 
@@ -182,7 +181,7 @@ bool Scene::parse(){
                     //in case s, reads in the sphere
                     case 's':
                         double x, y, z, r;
-                        curr >> token >> x >> y >> z >> r;
+                        curr >> x >> y >> z >> r;
                         addSphere(x, y, z, r, currFill);
                         break;
                     
@@ -224,10 +223,10 @@ bool Scene::parse(){
                 if ((counter == verticies)){
                     bool makeTriangles = false;
                     if (verticies == 4) {
-                        Vector3d n0 = cross(*currPolygon->m_vertex[1] - *currPolygon->m_vertex[0], *currPolygon->m_vertex[2] - *currPolygon->m_vertex[0]);
-                        Vector3d n1 = cross(*currPolygon->m_vertex[2] - *currPolygon->m_vertex[1], *currPolygon->m_vertex[3] - *currPolygon->m_vertex[1]);
-                        Vector3d n2 = cross(*currPolygon->m_vertex[3] - *currPolygon->m_vertex[2], *currPolygon->m_vertex[0] - *currPolygon->m_vertex[2]);
-                        Vector3d n3 = cross(*currPolygon->m_vertex[0] - *currPolygon->m_vertex[3], *currPolygon->m_vertex[1] - *currPolygon->m_vertex[3]);
+                        Vector3d n0 = cross(currPolygon->m_vertex[1] - currPolygon->m_vertex[0], currPolygon->m_vertex[2] - currPolygon->m_vertex[0]);
+                        Vector3d n1 = cross(currPolygon->m_vertex[2] - currPolygon->m_vertex[1], currPolygon->m_vertex[3] - currPolygon->m_vertex[1]);
+                        Vector3d n2 = cross(currPolygon->m_vertex[3] - currPolygon->m_vertex[2], currPolygon->m_vertex[0] - currPolygon->m_vertex[2]);
+                        Vector3d n3 = cross(currPolygon->m_vertex[0] - currPolygon->m_vertex[3], currPolygon->m_vertex[1] - currPolygon->m_vertex[3]);
                         if (((n0.dot(n1) > 0) && ((n0.dot(n2)) > 0) && (n0.dot(n3) > 0)) || (currPolygon->isTriangle)) {
                             makeTriangles = true;
                         }
@@ -239,17 +238,11 @@ bool Scene::parse(){
                             //supports triangle fanning
                             for (int i = 1; i < (verticies - 1); i++){
                                 Polygon* ptr = new Polygon(3, currPolygon->m_fill, true);
-                                Vector3d* a = new Vector3d();
-                                Vector3d* b = new Vector3d();
-                                Vector3d* c = new Vector3d();
-
+                                
                                 //for normal sides
-                                *a = *currPolygon->m_vertex[0];
-                                *b = *currPolygon->m_vertex[i];
-                                *c = *currPolygon->m_vertex[i + 1];
-                                ptr->pushBackVector(a);
-                                ptr->pushBackVector(b);
-                                ptr->pushBackVector(c);
+                                ptr->pushBackVector(currPolygon->m_vertex[0]);
+                                ptr->pushBackVector(currPolygon->m_vertex[i]);
+                                ptr->pushBackVector(currPolygon->m_vertex[i + 1]);
 
                                 //push back to the m_surfaces
                                 m_surfaces.push_back(ptr);
@@ -276,10 +269,10 @@ bool Scene::parse(){
                 if ((counter == verticies)){
                     bool makeTriangles = false;
                     if (verticies == 4) {
-                        Vector3d n0 = cross(*currPatch->m_vertex[1] - *currPatch->m_vertex[0], *currPatch->m_vertex[2] - *currPatch->m_vertex[0]);
-                        Vector3d n1 = cross(*currPatch->m_vertex[2] - *currPatch->m_vertex[1], *currPatch->m_vertex[3] - *currPatch->m_vertex[1]);
-                        Vector3d n2 = cross(*currPatch->m_vertex[3] - *currPatch->m_vertex[2], *currPatch->m_vertex[0] - *currPatch->m_vertex[2]);
-                        Vector3d n3 = cross(*currPatch->m_vertex[0] - *currPatch->m_vertex[3], *currPatch->m_vertex[1] - *currPatch->m_vertex[3]);
+                        Vector3d n0 = cross(currPatch->m_vertex[1] - currPatch->m_vertex[0], currPatch->m_vertex[2] - currPatch->m_vertex[0]);
+                        Vector3d n1 = cross(currPatch->m_vertex[2] - currPatch->m_vertex[1], currPatch->m_vertex[3] - currPatch->m_vertex[1]);
+                        Vector3d n2 = cross(currPatch->m_vertex[3] - currPatch->m_vertex[2], currPatch->m_vertex[0] - currPatch->m_vertex[2]);
+                        Vector3d n3 = cross(currPatch->m_vertex[0] - currPatch->m_vertex[3], currPatch->m_vertex[1] - currPatch->m_vertex[3]);
                         if (((n0.dot(n1) > 0) && ((n0.dot(n2)) > 0) && (n0.dot(n3) > 0)) || (currPatch->isTriangle)) {
                             makeTriangles = true;
                         }
@@ -291,29 +284,15 @@ bool Scene::parse(){
                         //supports triangle fanning
                         for (int i = 1; i < (verticies - 1); i++){
                             Patch* ptr = new Patch(3, currPatch->m_fill, true);
-                            Vector3d* a = new Vector3d();
-                            Vector3d* b = new Vector3d();
-                            Vector3d* c = new Vector3d();
 
-                            //for normal sides
-                            *a = *currPatch->m_vertex[0];
-                            *b = *currPatch->m_vertex[i];
-                            *c = *currPatch->m_vertex[i + 1];
-                            ptr->pushBackVector(a);
-                            ptr->pushBackVector(b);
-                            ptr->pushBackVector(c);
-
-                            Vector3d* x = new Vector3d();
-                            Vector3d* y = new Vector3d();
-                            Vector3d* z = new Vector3d();
+                            ptr->pushBackVector(currPatch->m_vertex[0]);
+                            ptr->pushBackVector(currPatch->m_vertex[i]);
+                            ptr->pushBackVector(currPatch->m_vertex[i + 1]);
 
                             //now does the normalized vectors
-                            *x = (currPatch->m_normal[0]->normalized());
-                            *y = currPatch->m_normal[i]->normalized();
-                            *z = currPatch->m_normal[i + 1]->normalized();
-                            ptr->pushBackNorm(x);
-                            ptr->pushBackNorm(y);
-                            ptr->pushBackNorm(z);
+                            ptr->pushBackNorm((currPatch->m_normal[0].normalized()));
+                            ptr->pushBackNorm(currPatch->m_normal[i].normalized());
+                            ptr->pushBackNorm(currPatch->m_normal[i + 1].normalized());
 
                             //push back to the m_surfaces
                             m_surfaces.push_back(ptr);
@@ -354,7 +333,7 @@ void Scene::addLight(double x, double y, double z){
 }
 
 //adds a sphere to the m_sphere vector
-void Scene::addSphere(double x, double y, double z, double r, double fill[8]){
+void Scene::addSphere(double x, double y, double z, double r, const double* fill){
     Sphere* sphere = new Sphere(x, y, z, r, fill);
     m_surfaces.push_back(sphere);
 }
@@ -383,13 +362,8 @@ Scene& Scene::operator=(const Scene& rhs){
         for(const auto& s : rhs.m_surfaces){
             m_surfaces.push_back(s->clone());
         }
-
-
-
-
         //copies contects of m_viewpoint over
         if(rhs.m_viewpoint){
-
             m_viewpoint = new Viewpoint();
             m_viewpoint->at = rhs.m_viewpoint->at;
             m_viewpoint->from = rhs.m_viewpoint->from;

@@ -28,16 +28,16 @@ enum class State{
 class Scene{
     public:
         Scene();
-        Scene(std::string file);
+        Scene(const std::string&);
         Scene(const Scene& rhs);
         ~Scene();
-        void setFile(std:: string file);
+        void setFile(const std::string&);
         void clearFile();
         bool parse();
 
         //not  having this assignment operator caused me more pain
         //than you would ever know :(
-        Scene& operator=(const Scene& other);
+        Scene& operator=(const Scene&);
         void clear();
 
         //member variables
@@ -47,9 +47,9 @@ class Scene{
         Viewpoint* m_viewpoint;
 
     private:
-        void setBackground(double r, double g, double b);
-        void addLight(double x, double y, double z);
-        void addSphere(double x, double y, double z, double r, double arr[8]);
+        void setBackground(double, double, double);
+        void addLight(double, double, double);
+        void addSphere(double, double, double, double, const double*);
 
 
         //member variables

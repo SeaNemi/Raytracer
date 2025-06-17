@@ -27,13 +27,13 @@ enum class Shape{
 //class Raytracer used to depict the scene
 class Raytracer{
     public:
-        Raytracer(Scene& scene);
-        void createImage(std::string output);
-        Vector3d colorSet(Ray ray);
-        bool isHit(Ray ray, Surface*& currSurface, Hit &hr);
+        Raytracer(const Scene&);
+        void createImage(const std::string&);
+        Vector3d colorSet(const Ray&);
+        bool isHit(const Ray&, Surface*&, Hit&);
         void worldSpace();
-        bool shadowTest(Ray ray, double distance);
-        Vector3d localLight(Ray ray,  Surface* currSurface, Hit& hit);
+        bool shadowTest(Ray&, double);
+        Vector3d localLight(const Ray&,  Surface*, Hit&);
         bool color;
         bool phong;
         bool stratified;

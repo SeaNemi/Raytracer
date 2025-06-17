@@ -2,15 +2,14 @@
 
 #include "Raytracer.h"
 
-Raytracer::Raytracer(Scene& scene){
+Raytracer::Raytracer(const Scene& scene){
     m_scene = scene;
 }
 
 
 //worldSpace makes it so that the camera is in a 3d plane
 void Raytracer::worldSpace(){
-
-    //all formulas from class
+    //all formulas from book
     vecW = m_scene.m_viewpoint->from - m_scene.m_viewpoint->at;
     vecW.normalize();
 
@@ -24,7 +23,7 @@ void Raytracer::worldSpace(){
     magD = temp.norm();
 }
 
-void Raytracer::createImage(std::string output){
+void Raytracer::createImage(const std::string& output){
     //firstly call worldSpace to set up the vectors and magD
     worldSpace();
 
@@ -146,7 +145,7 @@ void Raytracer::createImage(std::string output){
 }
 
 //colorSet determines if the color remains the background color or not
-Vector3d Raytracer::colorSet(Ray ray){
+Vector3d Raytracer::colorSet(const Ray& ray){
     Surface* currSurface = nullptr;
     Hit hr;
 
@@ -181,7 +180,7 @@ Vector3d Raytracer::colorSet(Ray ray){
 
 //localLight
 //goes through the local light sources and determines the color vector
-Vector3d Raytracer::localLight(Ray ray, Surface* currSurface, Hit& hit){
+Vector3d Raytracer::localLight(const Ray& ray, Surface* currSurface, Hit& hit){
     //for loop goes through for each light source
     Vector3d localColor;
     Vector3d colorfill(hit.fill[0], hit.fill[1], hit.fill[2]);
@@ -223,23 +222,19 @@ Vector3d Raytracer::localLight(Ray ray, Surface* currSurface, Hit& hit){
 
 //shadowTest
 //used to test if the shadow ray is represnted in the shadow
-bool Raytracer::shadowTest(Ray ray, double distance){
-
+bool Raytracer::shadowTest(Ray& ray, double distance){
     Hit hit; //hit set up but is not needed in this case
-
     //for loop goes through and determines if an intersection occurs
     for(unsigned int i = 0; i < m_scene.m_surfaces.size(); i++){
         //if an intersection occurs, then return true
         double bias = BIAS;
-        if(m_scene.m_surfaces[i]->intersect(ray, bias, distance, hit)){
-            return true;
-        }
+        if(m_scene.m_surfaces[i]->intersect(ray, bias, distance, hit))return true;
     }
     return false;
 }
 
-//isHit determines if an object is hit or not, and determines the type if so
-bool Raytracer::isHit(Ray ray, Surface*& currSurface, Hit &hr){
+//isHit determines if an objects is hit or not, and determines the type if so
+bool Raytracer::isHit(const Ray& ray, Surface*& currSurface, Hit &hr){
     //originally delcares the shape hit as nothing
     bool state = false;
 
