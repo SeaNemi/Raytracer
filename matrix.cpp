@@ -24,7 +24,7 @@ Vector3d::~Vector3d(){}
 
 //cross product
 Vector3d Vector3d::cross(const Vector3d& vec) const{
-    return Vector3d((m_y*vec.z() - m_z*vec.y()),(-1*(m_z*vec.x() - m_x*vec.z())),(m_x*vec.y() - m_y*vec.x()));
+    return Vector3d((m_y*vec.z() - m_z*vec.y()),((m_z*vec.x() - m_x*vec.z())),(m_x*vec.y() - m_y*vec.x()));
 }
 
 //norm magntitude calculations
@@ -88,7 +88,7 @@ Vector3d Vector3d::operator*(double a) const{
     return Vector3d((m_x*a), (m_y*a), (m_z*a));
 }
 Vector3d Vector3d::operator/(double a) const{
-    return Vector3d ((m_x*a), (m_y*a), (m_z*a));
+    return Vector3d ((m_x/a), (m_y/a), (m_z/a));
 }
 Vector3d& Vector3d::operator+=(const Vector3d& vec){
     m_x += vec.x();
@@ -131,7 +131,7 @@ bool Vector3d::operator==(const Vector3d& vec) const{
     return ((m_x == vec.x()) && (m_y == vec.y()) && (m_z == vec.z()));
 }
 bool Vector3d::operator!=(const Vector3d& vec) const{
-    return ((m_x != vec.x()) && (m_y != vec.y()) && (m_z != vec.z()));
+    return ((m_x != vec.x()) || (m_y != vec.y()) || (m_z != vec.z()));
 }
 
 //return member variables
@@ -224,7 +224,7 @@ Vector2d Vector2d::operator*(double a) const{
     return Vector2d((m_x*a), (m_y*a));
 }
 Vector2d Vector2d::operator/(double a) const{
-    return Vector2d((m_x*a), (m_y*a));
+    return Vector2d((m_x/a), (m_y/a));
 }
 Vector2d& Vector2d::operator+=(const Vector2d& vec){
     m_x += vec.x();
@@ -261,7 +261,7 @@ bool Vector2d::operator==(const Vector2d& vec) const{
     return ((m_x == vec.x()) && (m_y == vec.y()));
 }
 bool Vector2d::operator!=(const Vector2d& vec) const{
-    return ((m_x != vec.x()) && (m_y != vec.y()));
+    return ((m_x != vec.x()) || (m_y != vec.y()));
 }
 
 double Vector2d::x() const{
@@ -391,11 +391,15 @@ Matrix3d Matrix3d::operator-(const Matrix3d& arr) const{
 }
 Matrix3d Matrix3d::operator*(const Matrix3d& arr) const{
     Matrix3d ret;
-    for(int i=0; i < 3; i++){
-        for(int j =0; j < 3; j++){
-            ret(i, j) = m_mat[i][j] * arr(i,j);
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            ret(i, j) = 0;
+            for (int k = 0; k < 3; k++) {
+                ret(i, j) += m_mat[i][k] * arr(k, j);
+            }
         }
     }
+
     return ret;
 }
 Matrix3d Matrix3d::operator*(double a) const{

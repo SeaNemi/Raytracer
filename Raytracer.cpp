@@ -20,9 +20,8 @@ void Raytracer::worldSpace(){
     vecV = vecW.cross(vecU);
     vecV.normalize();
 
-    Vector3d temp = m_scene.m_viewpoint->from - m_scene.m_viewpoint->at;
+    Vector3d temp= m_scene.m_viewpoint->from - m_scene.m_viewpoint->at;
     magD = temp.norm();
-
 }
 
 void Raytracer::createImage(std::string output){
@@ -57,7 +56,7 @@ void Raytracer::createImage(std::string output){
     //image is then begun to be created
     for (int py = 0; py < HEIGHT; py++){
         for (int px = 0; px < WIDTH; px++){
-            Vector3d color(0,0,0);
+            Vector3d color;
             //accounting for jittering
             if (stratified){
                 //goes through to account for the samples
@@ -76,7 +75,7 @@ void Raytracer::createImage(std::string output){
                         direction = (-1 * magD * vecW);
                         direction = direction + (x * vecU);
                         direction = direction + (y * vecV);
-                        direction = direction.normalized();
+                        direction.normalize();
 
                         Ray ray(m_scene.m_viewpoint->from, direction);
 
@@ -134,7 +133,6 @@ void Raytracer::createImage(std::string output){
             }
         }
     }
-    
     //makes it so that the new file is now printed
     const char* newFile = output.c_str();
     FILE *f = fopen(newFile,"wb");
@@ -185,7 +183,7 @@ Vector3d Raytracer::colorSet(Ray ray){
 //goes through the local light sources and determines the color vector
 Vector3d Raytracer::localLight(Ray ray, Surface* currSurface, Hit& hit){
     //for loop goes through for each light source
-    Vector3d localColor(0,0,0);
+    Vector3d localColor;
     Vector3d colorfill(hit.fill[0], hit.fill[1], hit.fill[2]);
     for(unsigned int i = 0; i < m_scene.m_lights.size(); i++){
         //the three vectors for Lambert shading are set up
