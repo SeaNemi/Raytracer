@@ -61,16 +61,16 @@ Vector3d Vector3d::normalized() const{
 
 //at and overloaded bracket operators
 //return m_x m_y or m_z based on index, out of bounds not included as not necessary in this context
-double& Vector3d::at(int index){
+double& Vector3d::at(short index){
     if(index == 0) return m_x;
     else if(index == 1) return m_y;
     else return m_z;
 }
 
-double& Vector3d::operator[](int index){
+double& Vector3d::operator[](short index){
     return at(index);
 }
-const double& Vector3d::operator[](int index) const{
+const double& Vector3d::operator[](short index) const{
     if(index == 0) return m_x;
     else if(index == 1) return m_y;
     else return m_z;
@@ -199,15 +199,15 @@ void Vector2d::normalize(){
 //empty destructor since nothing is dynamically allocated
 Vector2d::~Vector2d(){}
 
-double& Vector2d::at(int index){
+double& Vector2d::at(short index){
     if(index == 0) return m_x;
     else return m_y;
 }
 
-double& Vector2d::operator[](int index){
+double& Vector2d::operator[](short index){
     return at(index);
 }
-const double& Vector2d::operator[](int index) const{
+const double& Vector2d::operator[](short index) const{
     if(index == 0) return m_x;
     else return m_y;
 }
@@ -272,13 +272,13 @@ double Vector2d::y() const{
 }
 
 //overloaded constructor
-Vector2d::Vector2d(const Vector3d& vec, int dir)
+Vector2d::Vector2d(const Vector3d& vec, short dir)
     : Vector2d(project(vec, dir)) {}
 
 
 //project
 //used to aid in projection of object
-Vector2d Vector2d::project(const Vector3d &vec, int dir) {
+Vector2d Vector2d::project(const Vector3d &vec, short dir) {
     switch (dir) {
         case 0:
             return Vector2d(vec.y(),vec.z());
@@ -298,21 +298,21 @@ Vector2d Vector2d::project(const Vector3d &vec, int dir) {
 
 //constructors
 Matrix3d::Matrix3d(){
-    for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++) m_mat[i][j] = 0;
+    for(short i = 0; i < 3; i++) for(short j = 0; j < 3; j++) m_mat[i][j] = 0;
 }
 
 Matrix3d::Matrix3d(double arr[3][3]){
-    for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++) m_mat[i][j] = arr[i][j];
+    for(short i = 0; i < 3; i++) for(short j = 0; j < 3; j++) m_mat[i][j] = arr[i][j];
 }
 
 Matrix3d::Matrix3d(const Matrix3d& arr){
-    for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++) m_mat[i][j] = arr(i, j);
+    for(short i = 0; i < 3; i++) for(short j = 0; j < 3; j++) m_mat[i][j] = arr(i, j);
 }
 
 Matrix3d::Matrix3d(double arr[9]){
-    int t = 0;
-    for(int i = 0; i < 3; i++){
-        for(int j = 0; j < 3; j++){
+    short t = 0;
+    for(short i = 0; i < 3; i++){
+        for(short j = 0; j < 3; j++){
             m_mat[i][j] = arr[t];
             t++;
         }
@@ -346,17 +346,17 @@ Matrix3d::Matrix3d(const Vector3d& vay, const Vector3d& vee, const Vector3d& viu
 //destructor, empty but clear function is included
 Matrix3d::~Matrix3d(){}
 void Matrix3d::clear(){
-    for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++) m_mat[i][j] = 0;    
+    for(short i = 0; i < 3; i++) for(short j = 0; j < 3; j++) m_mat[i][j] = 0;    
 }
 
 //indexing elements
-double& Matrix3d::operator()(int i, int j){
+double& Matrix3d::operator()(short i, short j){
     return m_mat[i][j];
 }
-double Matrix3d::operator()(int i, int j) const{
+double Matrix3d::operator()(short i, short j) const{
     return m_mat[i][j];
 }
-double& Matrix3d::at(int i, int j){
+double& Matrix3d::at(short i, short j){
     return m_mat[i][j];
 }
 
@@ -364,7 +364,7 @@ double& Matrix3d::at(int i, int j){
 Matrix3d& Matrix3d::operator=(const Matrix3d& arr){
     if(this != &arr){
         clear();
-        for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++) m_mat[i][j] = arr(i, j);
+        for(short i = 0; i < 3; i++) for(short j = 0; j < 3; j++) m_mat[i][j] = arr(i, j);
     }
     return *this;
 }
@@ -373,8 +373,8 @@ Matrix3d& Matrix3d::operator=(const Matrix3d& arr){
 //Overloaded mathematics operator
 Matrix3d Matrix3d::operator+(const Matrix3d& arr) const{
     Matrix3d ret;
-    for(int i=0; i < 3; i++){
-        for(int j =0; j < 3; j++){
+    for(short i=0; i < 3; i++){
+        for(short j =0; j < 3; j++){
             ret(i, j) = m_mat[i][j] + arr(i,j);
         }
     }
@@ -382,8 +382,8 @@ Matrix3d Matrix3d::operator+(const Matrix3d& arr) const{
 }
 Matrix3d Matrix3d::operator-(const Matrix3d& arr) const{
     Matrix3d ret;
-    for(int i=0; i < 3; i++){
-        for(int j =0; j < 3; j++){
+    for(short i=0; i < 3; i++){
+        for(short j =0; j < 3; j++){
             ret(i, j) = m_mat[i][j] - arr(i,j);
         }
     }
@@ -391,10 +391,10 @@ Matrix3d Matrix3d::operator-(const Matrix3d& arr) const{
 }
 Matrix3d Matrix3d::operator*(const Matrix3d& arr) const{
     Matrix3d ret;
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
+    for (short i = 0; i < 3; i++) {
+        for (short j = 0; j < 3; j++) {
             ret(i, j) = 0;
-            for (int k = 0; k < 3; k++) {
+            for (short k = 0; k < 3; k++) {
                 ret(i, j) += m_mat[i][k] * arr(k, j);
             }
         }
@@ -404,8 +404,8 @@ Matrix3d Matrix3d::operator*(const Matrix3d& arr) const{
 }
 Matrix3d Matrix3d::operator*(double a) const{
     Matrix3d ret;
-    for(int i=0; i < 3; i++){
-        for(int j =0; j < 3; j++){
+    for(short i=0; i < 3; i++){
+        for(short j =0; j < 3; j++){
             ret(i, j) = m_mat[i][j] * a;
         }
     }
@@ -413,27 +413,27 @@ Matrix3d Matrix3d::operator*(double a) const{
 }
 Matrix3d Matrix3d::operator/(double a) const{
     Matrix3d ret;
-    for(int i=0; i < 3; i++){
-        for(int j =0; j < 3; j++){
+    for(short i=0; i < 3; i++){
+        for(short j =0; j < 3; j++){
             ret(i, j) = m_mat[i][j] / a;
         }
     }
     return ret;
 }
 Matrix3d& Matrix3d::operator*=(double a){
-    for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++) m_mat[i][j] *= a;
+    for(short i = 0; i < 3; i++) for(short j = 0; j < 3; j++) m_mat[i][j] *= a;
     return *this;
 }
 Matrix3d& Matrix3d::operator/=(double a){
-    for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++) m_mat[i][j] /= a;
+    for(short i = 0; i < 3; i++) for(short j = 0; j < 3; j++) m_mat[i][j] /= a;
     return *this;
 }
 Matrix3d& Matrix3d::operator+=(const Matrix3d& arr){
-    for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++) m_mat[i][j] += arr(i, j);
+    for(short i = 0; i < 3; i++) for(short j = 0; j < 3; j++) m_mat[i][j] += arr(i, j);
     return *this;
 }
 Matrix3d& Matrix3d::operator-=(const Matrix3d& arr){
-    for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++) m_mat[i][j] -= arr(i, j);
+    for(short i = 0; i < 3; i++) for(short j = 0; j < 3; j++) m_mat[i][j] -= arr(i, j);
     return *this;
 }
 
@@ -447,7 +447,7 @@ Vector3d Matrix3d::operator*(const Vector3d& vec) const{
 //transpose
 Matrix3d Matrix3d::transpose() const{
     Matrix3d copy;
-    for(int i = 0; i < 3; i++) for(int j = 0; j < 3; j++) copy(j, i) = m_mat[i][j];
+    for(short i = 0; i < 3; i++) for(short j = 0; j < 3; j++) copy(j, i) = m_mat[i][j];
     return copy;
 }
 
@@ -463,13 +463,13 @@ double Matrix3d::determinant() const{
 }
 
 //row and col
-void Matrix3d::row(int index, const Vector3d& vec){
+void Matrix3d::row(short index, const Vector3d& vec){
     if(index < 0 || index > 2) return;
-    for(int i = 0; i < 3; i++) m_mat[index][i] = vec[i];
+    for(short i = 0; i < 3; i++) m_mat[index][i] = vec[i];
 }
-void Matrix3d::col(int index, const Vector3d& vec){
+void Matrix3d::col(short index, const Vector3d& vec){
     if(index < 0 || index > 2) return;
-    for(int i = 0; i < 3; i++) m_mat[i][index] = vec[i];
+    for(short i = 0; i < 3; i++) m_mat[i][index] = vec[i];
 }
 
 ////////////////////////////////////////////////////////////

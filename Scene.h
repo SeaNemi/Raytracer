@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <algorithm>
 
 //enum used to determine what state the parser is in
 enum class State{
@@ -23,6 +24,21 @@ enum class State{
     SPHERE,
     POLYGON,
     PATCH
+};
+
+//Node class
+//private except only to binary tree
+class Node{
+    public:
+    bool boxIntersect(const Vector3d&, const Vector3d&, const Ray&, double, double);
+    void Node::surroundingBox(const Vector3d&, const Vector3d&, const Vector3d&, const Vector3d&, Vector3d&, Vector3d&);
+    //member variables
+    Node* m_left;
+    Node* m_right;
+    Surface* m_data;
+    Vector3d boxMin;
+    Vector3d boxMax;
+
 };
 
 class Scene{
@@ -50,7 +66,12 @@ class Scene{
         void setBackground(double, double, double);
         void addLight(double, double, double);
         void addSphere(double, double, double, double, const double*);
-
+        bool parseNFF();
+        bool parseObj();
+        std::vector<Polygon*> earclip(const Polygon*);
+        std::vector<Patch*> earclip(const Patch* currPatch);
+        bool pointInTriangle(const Vector2d&, const Vector2d&, const Vector2d&, const Vector2d&);
+        bool isClockwise(const std::vector<Vector2d>&);
 
         //member variables
         std::string m_file;

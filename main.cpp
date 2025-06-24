@@ -6,17 +6,16 @@
 
 int main(int argc, char* argv[]){
     std::cout << "Ray Tracer!" << std::endl;
+    short mode = 3;
     int c;
     double aperture = 0.0;
     int samples = 1;
     int maxraydepth = 5;
-    bool color = false;
+    bool color = true;
     bool phong = false;
     bool stratified = false;
     bool reflections = true;
     bool shadows = true;
-    bool verbose = false;
-    int mode = 3;
     while ((c = getopt(argc, argv, "a:s:d:cpjm:v")) != -1) {
         switch(c) {
         case 'a':
@@ -29,7 +28,7 @@ int main(int argc, char* argv[]){
         stratified = true;
         break;
         case 'c':
-        color = true;
+        color = false;
         break;
         case 'p':
         phong = true;
@@ -39,9 +38,6 @@ int main(int argc, char* argv[]){
         break;
         case 'd':
         maxraydepth = atoi(optarg);
-        break;
-        case 'v':
-        verbose = true;
         break;
         default:
         abort();
@@ -54,7 +50,7 @@ int main(int argc, char* argv[]){
         exit(0);
     }	
 
-    switch(mode) {
+    switch(mode){
         case 0:
             reflections = shadows = false;
             break;
@@ -63,6 +59,8 @@ int main(int argc, char* argv[]){
             break;
         case 2:
             shadows = false;
+            break;
+        default:
             break;
     }
 
@@ -78,7 +76,6 @@ int main(int argc, char* argv[]){
         tracer.reflections = reflections;
         tracer.shadows = shadows;
         tracer.maxraydepth = maxraydepth;
-        tracer.verbose = verbose;
         tracer.createImage(argv[optind++]);
         std::cout << "Your image has been created!" << std::endl;
     }else{

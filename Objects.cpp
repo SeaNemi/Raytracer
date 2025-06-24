@@ -23,7 +23,7 @@ Hit::Hit(double to,double a,double b,double g, const Vector3d& inte, const Vecto
 }
 
 void Hit::transfer(const double *fil){
-    for(int i = 0; i < 8; i++){
+    for(short i = 0; i < 8; i++){
         fill[i] = fil[i];
     }
 }
@@ -35,7 +35,7 @@ Surface::~Surface(){}
 //Constructor for Polygon
 Polygon::Polygon(int verticies, const double *fill, bool tri, bool pat){
     m_verticies = verticies;
-    for (int i = 0; i < 8; i++){
+    for (short i = 0; i < 8; i++){
         m_fill[i] = fill[i];
     }
 
@@ -56,7 +56,7 @@ void Polygon::addVertex(double x, double y, double z){
 Polygon::Polygon(const Polygon& rhs){
     m_verticies = rhs.m_verticies;
     //sets up everything
-    for (int i = 0; i < 8; i++){
+    for (short i = 0; i < 8; i++){
         m_fill[i] = rhs.m_fill[i];
     }
     
@@ -75,7 +75,7 @@ Polygon& Polygon::operator=(const Polygon& rhs){
     if(this != &rhs){
         m_verticies = rhs.m_verticies;
         //sets up everything
-        for (int i = 0; i < 8; i++){
+        for (short i = 0; i < 8; i++){
             m_fill[i] = rhs.m_fill[i];
         }
         
@@ -169,9 +169,9 @@ bool Polygon::intersect(const Ray& ray, double &min, double &max, Hit &hr){
 
         Vector3d p= ray.eye + t*ray.dir;
 
-        if (fabs(n[0]) > fabs(n[1]) && fabs(n[0]) > fabs(n[2])) {
+        if (std::fabs(n[0]) > std::fabs(n[1]) && std::fabs(n[0]) > std::fabs(n[2])) {
             projectDir = 0;
-        } else if (fabs(n[1]) > fabs(n[2])) {
+        } else if (std::fabs(n[1]) > std::fabs(n[2])) {
             projectDir = 1;
         } else {
             projectDir = 2;
@@ -195,16 +195,17 @@ bool Polygon::intersect(const Ray& ray, double &min, double &max, Hit &hr){
         if (p2[0] > bbMax[0]) return false;
         if (p2[1] > bbMax[1]) return false;
 
-        Vector2d dir(sqrt(2), sqrt(2));
+        Vector2d dir(std::sqrt(2), std::sqrt(2));
         int count = 0;
         for (unsigned int i=0; i<m_vertex.size(); i++) {
             Vector2d a(m_vertex[i], projectDir);
             Vector2d b(m_vertex[(i+1) % m_vertex.size()], projectDir);
             Vector2d ab = b-a;
+            double denom = dir.cross(ab);
             Vector2d ap2(a-p2);
-            double t2 = ap2.cross(ab / dir.cross(ab));
+            double t2 = ap2.cross(ab/denom);
             if (t2 < 0.0) continue;
-            double alpha = ap2.cross(dir / dir.cross(ab));
+            double alpha = ap2.cross(dir / denom);
             if (alpha > 0.0 && alpha < 1.0) count++;
         }
 
@@ -236,7 +237,7 @@ Sphere::Sphere(double x, double y, double z, double r, const double* fill, bool 
     Vector3d vector(x, y, z);
     coords = vector;
     radius = r;
-    for (int i = 0; i < 8; i++){
+    for (short i = 0; i < 8; i++){
         m_fill[i] = fill[i];
     }
 
@@ -247,7 +248,7 @@ Sphere::Sphere(const Sphere& rhs){
     Vector3d vector(rhs.coords);
     coords = vector;
     radius = rhs.radius;
-    for (int i = 0; i < 8; i++){
+    for (short i = 0; i < 8; i++){
         m_fill[i] = rhs.m_fill[i];
     }
     isPatch = rhs.isPatch;
@@ -282,7 +283,7 @@ bool Sphere::intersect(const Ray& ray, double &min, double &max, Hit &hr){
     double root1, root2;
 
     //roots calculated
-    double ans = sqrt(discriminant);
+    double ans = std::sqrt(discriminant);
     root1 = ((-1 * b) + ans)/(a);
     root2 = ((-1 * b) - ans)/(a);
 
@@ -295,7 +296,7 @@ bool Sphere::intersect(const Ray& ray, double &min, double &max, Hit &hr){
     max = t;
     hr.t = t;
     hr.inter = ray.eye + (t*ray.dir);
-    hr.norm = ((hr.inter - coords) / radius).normalized();
+    hr.norm = ((hr.inter - coords) / radius);
     return true;
 }
 

@@ -62,8 +62,8 @@ void Raytracer::createImage(const std::string& output){
                 for(int jy = 0; jy < samples; jy++){
                     for(int jx = 0; jx < samples; jx++){
                         //offsets
-                        double ox = (jx + rand())/samples;
-                        double oy = (jy + rand())/samples;
+                        double ox = (jx + (double)rand() / RAND_MAX) / samples;
+                        double oy = (jy + (double)rand() / RAND_MAX) / samples;
 
                         //ray direction calculated with jittering
                         double x = -planeWidth/2 + pixWidth * (px + ox);
@@ -153,7 +153,8 @@ Vector3d Raytracer::colorSet(const Ray& ray){
     bool hit = isHit(ray, currSurface, hr);
 
     //if no hit occurs, return as it isn't useful
-    if(!hit) return m_scene.m_background;
+    //return based on color enabled or not
+    if(!hit) return color ? m_scene.m_background : Vector3d(0,0,0);
 
     hr.transfer(currSurface->m_fill);
 
@@ -163,7 +164,7 @@ Vector3d Raytracer::colorSet(const Ray& ray){
 
     //if the m_fill[4] of the current surface (which corresponds to ks)
     //or raydepth is less than 5, then continue recursion
-    if(hr.fill[4] > 0 && !(ray.depth > 5)){
+    if(reflections && (hr.fill[4] > 0) && !(ray.depth > 5)){
         //eye and direction are set up
         Vector3d eye = (hr.inter + hr.norm * BIAS);
         Vector3d direction = ray.dir - 2 * (ray.dir.dot(hr.norm)) * hr.norm;
@@ -183,7 +184,8 @@ Vector3d Raytracer::colorSet(const Ray& ray){
 Vector3d Raytracer::localLight(const Ray& ray, Surface* currSurface, Hit& hit){
     //for loop goes through for each light source
     Vector3d localColor;
-    Vector3d colorfill(hit.fill[0], hit.fill[1], hit.fill[2]);
+    //colorFill depends on if color determined or not
+    Vector3d colorfill= color ? Vector3d(hit.fill[0], hit.fill[1], hit.fill[2]) : Vector3d(1.0, 1.0, 1.0);
     for(unsigned int i = 0; i < m_scene.m_lights.size(); i++){
         //the three vectors for Lambert shading are set up
         Vector3d l = (m_scene.m_lights[i]->coords - hit.inter).normalized();
@@ -202,7 +204,7 @@ Vector3d Raytracer::localLight(const Ray& ray, Surface* currSurface, Hit& hit){
         Ray shadowRay = Ray((hit.inter + hit.norm * BIAS), l);
         double distance = (m_scene.m_lights[i]->coords - hit.inter).norm();
         //if shadow test is false, then update
-        if (!(shadowTest(shadowRay, distance))){
+        if (!shadows || !(shadowTest(shadowRay, distance))){
             //diffuse and specular are set
             double diffuse = (hit.norm.dot(l) > 0.0) ? hit.norm.dot(l) : 0.0;
             double max = (hit.norm.dot(h) > 0.0) ? hit.norm.dot(h) : 0.0;

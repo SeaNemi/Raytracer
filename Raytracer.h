@@ -39,7 +39,6 @@ class Raytracer{
         bool stratified;
         bool reflections;
         bool shadows;
-        bool verbose;
         int samples;
         double aperture;
         int maxraydepth;

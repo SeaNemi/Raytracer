@@ -1,8 +1,66 @@
 //William Whatley
 //Scene functions are here
-
 #include "Scene.h"
 
+//Node constructor
+//builds the node object
+Node::Node(std::vector<Surface*>& objects, unsigned int start, unsigned int end){
+    //determine count- if only one object then its the leaf
+    unsigned int count = end - start;
+    if (count == 1) {
+        object = objects[start];
+        object->getBounds(minBounds, maxBounds);
+    } else {
+        int axis = rand() % 3;
+        std::sort(objects.begin() + start, objects.begin() + end, [axis](Surface* a, Surface* b) {
+            Vector3d minA, maxA, minB, maxB;
+            a->getBounds(minA, maxA);
+            b->getBounds(minB, maxB);
+            return minA[axis] < minB[axis];
+        });
+
+        size_t mid = start + count / 2;
+        left = new Node(objects, start, mid);
+        right = new Node(objects, mid, end);
+
+        surroundingBox(left->minBounds, left->maxBounds, right->minBounds, right->maxBounds, minBounds, maxBounds);
+    }
+}
+
+Node::~Node() {
+    delete m_left;
+    delete m_right;
+}
+
+//boxIntersect
+//check to see if ray intersects with bounding box
+bool Node::boxIntersect(const Vector3d& min, const Vector3d& max, const Ray& ray, double tmin, double tmax){
+    for (short i = 0; i < 3; i++) {
+        //use the reciprocal of the direction and find intersection distances 
+        double recip = 1.0 / ray.dir[i];
+        double t0 = (min[i] - ray.eye[i]) * recip;
+        double t1 = (max[i] - ray.eye[i]) * recip;
+        if (recip < 0.0) std::swap(t0, t1);
+        //find the lesser values
+        tmin = (t0 > tmin) ? t0 : tmin;;
+        tmax = (t1 > tmax) ? tmax : t1;
+
+        //if the interval is logically inconsistent, return false
+        if (tmax <= tmin) return false;
+    }
+    //else if all 3 axes pass the test, return true
+    return true;
+}
+
+//surroundingBox
+//determines the bounding box
+void Node::surroundingBox(const Vector3d& min1, const Vector3d& max1, const Vector3d& min2, const Vector3d& max2, Vector3d& outMin, Vector3d& outMax){
+    //fmin and fmax used to prevent NaN errors
+    for (short i = 0; i < 3; i++) {
+        outMin[i] = std::fmin(min1[i], min2[i]);
+        outMax[i] = std::fmax(max1[i], max2[i]);
+    }
+}
 
 //Constructor
 Scene::Scene(){
@@ -54,18 +112,19 @@ void Scene::clearFile(){
 //the parser itself
 bool Scene::parse(){
     //if no file set up, then return
-    if(m_file == "None"){
-        return false;
-    }
+    if(m_file == "None") return false;
+    return (m_file.substr(m_file.find_last_of(".") + 1) == "obj") ? parseObj() : parseNFF();
+}
 
+//parseNFF
+//parses nff files
+bool Scene::parseNFF(){
     //opens the io stream to read through the file
     std::ifstream file(m_file);
     std::string line;
 
     //if the file can't be opened, return
-    if(!file.is_open()){
-        return false;
-    }
+    if(!file.is_open()) return false;
 
     State currState = State::NORMAL;
 
@@ -115,7 +174,7 @@ bool Scene::parse(){
                     //fills m_fill which will then be used for polygons
                     case 'f':
                         currState = State::DETERMINE;
-                        for (int i = 0; i < 8; i++){
+                        for (short i = 0; i < 8; i++){
                             curr >> currFill[i];
                         }
                         break;
@@ -174,7 +233,7 @@ bool Scene::parse(){
                 //switches based on the token
                 switch(token){
                     case 'f':
-                        for (int i = 0; i < 8; i++){
+                        for (short i = 0; i < 8; i++){
                             curr >> currFill[i];
                         }
                         break;
@@ -221,40 +280,20 @@ bool Scene::parse(){
                 //back to normal, and the polygon is then added
                 //to the vector of polygons
                 if ((counter == verticies)){
-                    bool makeTriangles = false;
-                    if (verticies == 4) {
-                        Vector3d n0 = cross(currPolygon->m_vertex[1] - currPolygon->m_vertex[0], currPolygon->m_vertex[2] - currPolygon->m_vertex[0]);
-                        Vector3d n1 = cross(currPolygon->m_vertex[2] - currPolygon->m_vertex[1], currPolygon->m_vertex[3] - currPolygon->m_vertex[1]);
-                        Vector3d n2 = cross(currPolygon->m_vertex[3] - currPolygon->m_vertex[2], currPolygon->m_vertex[0] - currPolygon->m_vertex[2]);
-                        Vector3d n3 = cross(currPolygon->m_vertex[0] - currPolygon->m_vertex[3], currPolygon->m_vertex[1] - currPolygon->m_vertex[3]);
-                        if (((n0.dot(n1) > 0) && ((n0.dot(n2)) > 0) && (n0.dot(n3) > 0)) || (currPolygon->isTriangle)) {
-                            makeTriangles = true;
-                        }
-                    }
-                        if (!makeTriangles) {
-                            m_surfaces.push_back(new Polygon(*currPolygon));
-                        }
-                        else{
-                            //supports triangle fanning
-                            for (int i = 1; i < (verticies - 1); i++){
-                                Polygon* ptr = new Polygon(3, currPolygon->m_fill, true);
-                                
-                                //for normal sides
-                                ptr->pushBackVector(currPolygon->m_vertex[0]);
-                                ptr->pushBackVector(currPolygon->m_vertex[i]);
-                                ptr->pushBackVector(currPolygon->m_vertex[i + 1]);
-
-                                //push back to the m_surfaces
-                                m_surfaces.push_back(ptr);
-                            }
-                        }
+                    //if triangle, skip check
+                    if(currPolygon->isTriangle) m_surfaces.push_back(new Polygon(*currPolygon));
+                    //else, perform ear clipping algorithm
+                    else{
+                        std::vector<Polygon*> clipped = earclip(currPolygon);
+                        for (unsigned int i = 0; i < clipped.size(); i++) m_surfaces.push_back(clipped[i]);                        
+                    }            
+                    //now reset the state and delete the ptr
                     currState = State::DETERMINE;
                     if(currPolygon){
                         delete currPolygon;
                         currPolygon = nullptr;
                     }
                 }
-
                 break;
             
             //case for when a patch is introduced
@@ -266,46 +305,24 @@ bool Scene::parse(){
                 counter++;
 
                 //checks if counter should be reset
+                //if all verticies are read in, then the state goes
+                //back to normal, and the polygon is then added
+                //to the vector of polygons
                 if ((counter == verticies)){
-                    bool makeTriangles = false;
-                    if (verticies == 4) {
-                        Vector3d n0 = cross(currPatch->m_vertex[1] - currPatch->m_vertex[0], currPatch->m_vertex[2] - currPatch->m_vertex[0]);
-                        Vector3d n1 = cross(currPatch->m_vertex[2] - currPatch->m_vertex[1], currPatch->m_vertex[3] - currPatch->m_vertex[1]);
-                        Vector3d n2 = cross(currPatch->m_vertex[3] - currPatch->m_vertex[2], currPatch->m_vertex[0] - currPatch->m_vertex[2]);
-                        Vector3d n3 = cross(currPatch->m_vertex[0] - currPatch->m_vertex[3], currPatch->m_vertex[1] - currPatch->m_vertex[3]);
-                        if (((n0.dot(n1) > 0) && ((n0.dot(n2)) > 0) && (n0.dot(n3) > 0)) || (currPatch->isTriangle)) {
-                            makeTriangles = true;
-                        }
-                    }
-                    if (!makeTriangles) {
-                        m_surfaces.push_back(new Patch(*currPatch));
-                    }
+                    //if triangle, skip check
+                    if(currPatch->isTriangle) m_surfaces.push_back(new Patch(*currPatch));
+                    //else, perform ear clipping algorithm
                     else{
-                        //supports triangle fanning
-                        for (int i = 1; i < (verticies - 1); i++){
-                            Patch* ptr = new Patch(3, currPatch->m_fill, true);
-
-                            ptr->pushBackVector(currPatch->m_vertex[0]);
-                            ptr->pushBackVector(currPatch->m_vertex[i]);
-                            ptr->pushBackVector(currPatch->m_vertex[i + 1]);
-
-                            //now does the normalized vectors
-                            ptr->pushBackNorm((currPatch->m_normal[0].normalized()));
-                            ptr->pushBackNorm(currPatch->m_normal[i].normalized());
-                            ptr->pushBackNorm(currPatch->m_normal[i + 1].normalized());
-
-                            //push back to the m_surfaces
-                            m_surfaces.push_back(ptr);
-                        }
-                    }
+                        std::vector<Patch*> clipped = earclip(currPatch);
+                        for (unsigned int i = 0; i < clipped.size(); i++) m_surfaces.push_back(clipped[i]);                        
+                    }            
+                    //now reset the state and delete the ptr
+                    currState = State::DETERMINE;
                     if(currPatch){
-                        //delete patch, set to nullptr, continue  
                         delete currPatch;
                         currPatch = nullptr;
                     }
-                    currState = State::DETERMINE;
                 }
-                
                 break;
             //default shouldn't be hit but exists for safety
             default:
@@ -319,6 +336,290 @@ bool Scene::parse(){
     return true;
 }
 
+bool Scene::parseObj(){
+    //opens the io stream to read through the file
+    std::ifstream file(m_file);
+    std::string line;
+
+    //if the file can't be opened, return
+    if(!file.is_open()) return false;
+
+    while(std::getline(file, line)){
+        std::istringstream curr(line);
+        char token;
+        std::string word;
+
+
+
+
+
+
+
+    }
+    //the parsing is then FINALLY done
+    file.close();
+    return true;
+}
+
+//pointInTriangle
+//used for a point in triangle test
+bool Scene::pointInTriangle(const Vector2d& p, const Vector2d& a, const Vector2d& b, const Vector2d& c){
+    double alpha = ((b.y() - c.y()) * (p.x() - c.x()) + (c.x() - b.x()) * (p.y() - c.y())) / ((b.y() - c.y()) * (a.x() - c.x()) + (c.x() - b.x()) * (a.y() - c.y()));
+    double beta  = ((c.y() - a.y()) * (p.x() - c.x()) + (a.x() - c.x()) * (p.y() - c.y())) / ((b.y() - c.y()) * (a.x() - c.x()) + (c.x() - b.x()) * (a.y() - c.y()));
+    double gamma = 1.0 - alpha - beta;
+    return alpha >= 0 && beta >= 0 && gamma >= 0;
+}
+
+//isClockwise
+//determines orientation to ensure clockwise position
+bool Scene::isClockwise(const std::vector<Vector2d>& verts){
+    double sum = 0.0;
+    for (unsigned int i = 0; i < verts.size(); ++i) {
+        const Vector2d& a = verts[i];
+        const Vector2d& b = verts[(i + 1) % verts.size()];
+        sum += (b.x() - a.x()) * (b.y() + a.y());
+    }
+    return sum > 0.0; // CW if positive
+}
+
+
+//earclip
+//performs triangluation using the earclip algorithm
+std::vector<Polygon*> Scene::earclip(const Polygon* currPoly){
+    //result initalized, vertexes copied over from the Polygon sent in
+    //size check performed to prevent illegal shaping
+    std::vector<Polygon*> result;
+    std::vector<Vector3d> vertexes = currPoly->m_vertex;
+    if (vertexes.size() < 3) return result;
+
+    //axis project determined based on the polygon's normal
+    int projectDir = 2;
+    Vector3d normal(0, 0, 0);
+    for (unsigned int i = 0; i < vertexes.size(); ++i) {
+        const Vector3d& curr = vertexes[i];
+        const Vector3d& next = vertexes[(i + 1) % vertexes.size()];
+        normal += curr.cross(next);
+    }
+    normal.normalize();
+
+    //choose correct projection axis
+    //discard axis with largest magnitude in the normal vector
+    if (fabs(normal[0]) > fabs(normal[1]) && fabs(normal[0]) > fabs(normal[2])) projectDir = 0;
+    else if (fabs(normal[1]) > fabs(normal[2])) projectDir = 1;
+
+    //3D vertices projected onto a 2D plane
+    std::vector<Vector2d> vexes2d;
+    for (const auto& v : vertexes)
+        vexes2d.emplace_back(v, projectDir);
+
+    //ensure vertices are in counter-clockwise order since required by ear clipping
+    if (isClockwise(vexes2d)) {
+        std::reverse(vertexes.begin(), vertexes.end());
+        std::reverse(vexes2d.begin(), vexes2d.end());
+    }
+
+    //ears are clipped until fewer than 3 vertices remain
+    while (vertexes.size() >= 3) {
+        bool earFound = false;
+        int n = vertexes.size();
+
+        //for loop goes through remaining verticies
+        for (int i = 0; i < n; ++i) {
+            double pIndex = (i + n - 1) % n;
+            double nIndex = (i + 1) % n;
+
+            //get prev, curr, next verticies
+            const Vector2d& prev = vexes2d[pIndex];
+            const Vector2d& curr = vexes2d[i];
+            const Vector2d& next = vexes2d[nIndex];
+
+            //check to see if the corner is convex
+            double crossZ = (curr - prev).cross(next - curr);
+            if (crossZ <= 0) continue;  // Not convex, skip
+
+            //check to see if any other vertex lies inside the triangle
+            //done to prevent inappropriate clipping
+            bool pointInside = false;
+            for (int j = 0; j < n; ++j) {
+                if (j == pIndex || j == i || j == nIndex) continue;
+                if (pointInTriangle(vexes2d[j], prev, curr, next)) {
+                    pointInside = true;
+                    break;
+                }
+            }
+            if (pointInside) continue;
+
+            //if no other vertex is inside and the corner is convex, we found an ear
+            Polygon* tri = new Polygon(3, currPoly->m_fill, true);
+            tri->pushBackVector(vertexes[pIndex]);
+            tri->pushBackVector(vertexes[i]);
+            tri->pushBackVector(vertexes[nIndex]);
+            result.push_back(tri);
+
+            //remove the ear tip from the polygon
+            vertexes.erase(vertexes.begin() + i);
+            vexes2d.erase(vexes2d.begin() + i);
+            earFound = true;
+            //break and restart search with new verticies removed
+            break;
+        }
+
+        //if we have no ear, break to prevent infinite loop
+        if (!earFound) break;
+    }
+
+    //forced fan triangulation used as a last resort
+    //forces triangulations 
+    if (vertexes.size() >= 3) {
+        //used to determine orientation
+        Vector3d sumNormal(0, 0, 0);
+        for (unsigned int i = 0; i < vertexes.size(); ++i) {
+            const Vector3d& v0 = vertexes[i];
+            const Vector3d& v1 = vertexes[(i + 1) % vertexes.size()];
+            sumNormal += v0.cross(v1);
+        }
+        sumNormal.normalize();
+
+        //flip vertex order if the polygon is wound downward
+        if (sumNormal.z() < 0) std::reverse(vertexes.begin(), vertexes.end());
+
+        //create forced triangle fan from the first vertex
+        for (unsigned int i = 1; i + 1 < vertexes.size(); ++i) {
+            Polygon* tri = new Polygon(3, currPoly->m_fill, true);
+            tri->pushBackVector(vertexes[0]);
+            tri->pushBackVector(vertexes[i]);
+            tri->pushBackVector(vertexes[i + 1]);
+            result.push_back(tri);
+        }
+    }
+    return result;
+}
+
+//earclip overload for patch
+//performs triangluation using the earclip algorithm for smooth shaded patches
+std::vector<Patch*> Scene::earclip(const Patch* currPatch) {
+    //result initalized, vertexes and normals copied over from the Patch sent in
+    //size check performed to prevent illegal shaping
+    std::vector<Patch*> result;
+    std::vector<Vector3d> vertexes = currPatch->m_vertex;
+    std::vector<Vector3d> normals = currPatch->m_normal;
+    if (vertexes.size() < 3) return result;
+
+    //axis project determined based on the polygon's normal
+    int projectDir = 2;
+    Vector3d normal(0, 0, 0);
+    for (unsigned int i = 0; i < vertexes.size(); ++i) {
+        const Vector3d& curr = vertexes[i];
+        const Vector3d& next = vertexes[(i + 1) % vertexes.size()];
+        normal += curr.cross(next);
+    }
+    normal.normalize();
+
+    //choose correct projection axis
+    //discard axis with largest magnitude in the normal vector
+    if (fabs(normal[0]) > fabs(normal[1]) && fabs(normal[0]) > fabs(normal[2])) projectDir = 0;
+    else if (fabs(normal[1]) > fabs(normal[2])) projectDir = 1;
+
+    //3D vertices projected onto a 2D plane
+    std::vector<Vector2d> vexes2d;
+    for (const auto& v : vertexes)
+        vexes2d.emplace_back(v, projectDir);
+
+    //ensure vertices are in counter-clockwise order since required by ear clipping
+    if (isClockwise(vexes2d)) {
+        std::reverse(vertexes.begin(), vertexes.end());
+        std::reverse(normals.begin(), normals.end());
+        std::reverse(vexes2d.begin(), vexes2d.end());
+    }
+
+    //ears are clipped until fewer than 3 vertices remain
+    while (vertexes.size() >= 3) {
+        bool earFound = false;
+        int n = vertexes.size();
+
+        //for loop goes through remaining verticies
+        for (int i = 0; i < n; ++i) {
+            int pIndex = (i + n - 1) % n;
+            int nIndex = (i + 1) % n;
+
+            //get prev, curr, next verticies
+            const Vector2d& prev = vexes2d[pIndex];
+            const Vector2d& curr = vexes2d[i];
+            const Vector2d& next = vexes2d[nIndex];
+
+            //check to see if the corner is convex
+            double crossZ = (curr - prev).cross(next - curr);
+            if (crossZ <= 0) continue;  // Not convex, skip
+
+            //check to see if any other vertex lies inside the triangle
+            //done to prevent inappropriate clipping
+            bool pointInside = false;
+            for (int j = 0; j < n; ++j) {
+                if (j == pIndex || j == i || j == nIndex) continue;
+                if (pointInTriangle(vexes2d[j], prev, curr, next)) {
+                    pointInside = true;
+                    break;
+                }
+            }
+            if (pointInside) continue;
+
+            //if no other vertex is inside and the corner is convex, we found an ear
+            Patch* tri = new Patch(3, currPatch->m_fill, true);
+            tri->pushBackVector(vertexes[pIndex]);
+            tri->pushBackVector(vertexes[i]);
+            tri->pushBackVector(vertexes[nIndex]);
+
+            tri->pushBackNorm(normals[pIndex]);
+            tri->pushBackNorm(normals[i]);
+            tri->pushBackNorm(normals[nIndex]);
+
+            result.push_back(tri);
+
+            //remove the ear tip from the polygon
+            vertexes.erase(vertexes.begin() + i);
+            normals.erase(normals.begin() + i);
+            vexes2d.erase(vexes2d.begin() + i);
+            earFound = true;
+            //break and restart search with new verticies removed
+            break;
+        }
+        //if we have no ear, break to prevent infinite loop
+        if (!earFound) break;
+    }
+
+    //forced fan triangulation used as a last resort
+    //forces triangulations
+    if (vertexes.size() >= 3) {
+        //used to determine orientation
+        Vector3d sumNormal(0, 0, 0);
+        for (unsigned int i = 0; i < vertexes.size(); ++i) {
+            const Vector3d& v0 = vertexes[i];
+            const Vector3d& v1 = vertexes[(i + 1) % vertexes.size()];
+            sumNormal += v0.cross(v1);
+        }
+        sumNormal.normalize();
+
+        //flip vertex order if the polygon is wound downward
+        if (sumNormal.z() < 0) {
+            std::reverse(vertexes.begin(), vertexes.end());
+            std::reverse(normals.begin(), normals.end());
+        }
+
+        //create forced triangle fan from the first vertex
+        for (unsigned int i = 1; i + 1 < vertexes.size(); ++i) {
+            Patch* tri = new Patch(3, currPatch->m_fill, true);
+            tri->pushBackVector(vertexes[0]);
+            tri->pushBackVector(vertexes[i]);
+            tri->pushBackVector(vertexes[i + 1]);
+            tri->pushBackNorm(normals[0]);
+            tri->pushBackNorm(normals[i]);
+            tri->pushBackNorm(normals[i + 1]);
+            result.push_back(tri);
+        }
+    }
+    return result;
+}
+
 void Scene::setBackground(double r, double g, double b){
     //vector created then set as the background
     Vector3d vector(r, g, b);
@@ -326,7 +627,6 @@ void Scene::setBackground(double r, double g, double b){
 }
 
 //adds a light source to the m_lights vector
-
 void Scene::addLight(double x, double y, double z){
     Light* light = new Light(x, y, z);
     m_lights.push_back(light);
@@ -347,7 +647,7 @@ Scene& Scene::operator=(const Scene& rhs){
         m_file = rhs.m_file;
         m_viewpoint = nullptr;
 
-        for (int i = 0; i < 3; i++){
+        for (short i = 0; i < 3; i++){
             m_background[i] = rhs.m_background[i];
         }
 
@@ -371,7 +671,7 @@ Scene& Scene::operator=(const Scene& rhs){
             m_viewpoint->angle = rhs.m_viewpoint->angle;
             m_viewpoint->hither = rhs.m_viewpoint->hither;
 
-            for (int i = 0; i < 2; i++){
+            for (short i = 0; i < 2; i++){
                 m_viewpoint->res[i] = rhs.m_viewpoint->res[i];
             }
         }

@@ -35,9 +35,9 @@ class Vector3d
     Vector3d normalized() const; //returns normalized copy
 
     //return indexing
-    double& at(int);
-    double& operator[](int);
-    const double& operator[](int) const;
+    double& at(short);
+    double& operator[](short);
+    const double& operator[](short) const;
 
 
     //overloaded operators
@@ -86,9 +86,9 @@ class Vector2d
     void normalize();
 
     //return indexing
-    double& at(int);
-    double& operator[](int);
-    const double& operator[](int) const;
+    double& at(short);
+    double& operator[](short);
+    const double& operator[](short) const;
 
     //overloaded operators
     Vector2d operator+(const Vector2d&) const;
@@ -111,8 +111,8 @@ class Vector2d
 
     //computer graphics specific code
     //overloaded constructor based on projection
-    Vector2d(const Vector3d&, int);
-    Vector2d project(const Vector3d&, int);
+    Vector2d(const Vector3d&, short);
+    Vector2d project(const Vector3d&, short);
 
     //member variables
     private:
@@ -133,9 +133,9 @@ class Matrix3d
     void clear();
 
     //return indexing
-    double& operator()(int, int);
-    double operator()(int, int) const;
-    double& at(int i, int j);
+    double& operator()(short, short);
+    double operator()(short, short) const;
+    double& at(short i, short j);
 
     //assignment operator
     Matrix3d& operator=(const Matrix3d&);
@@ -160,8 +160,8 @@ class Matrix3d
     double determinant() const;
     Matrix3d inverse() const;
 
-    void row(int, const Vector3d&);
-    void col(int, const Vector3d&);
+    void row(short, const Vector3d&);
+    void col(short, const Vector3d&);
 
     private:
     double m_mat[3][3];
