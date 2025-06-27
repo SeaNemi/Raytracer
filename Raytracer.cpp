@@ -232,5 +232,33 @@ Vector3d Raytracer::colorSet(const Ray& ray){
         Ray reflectionRay(eye, direction, (ray.depth + 1));
         totalColor += hr.fill[4] * colorSet(reflectionRay);
     }
+    if (reflections && (hr.fill[6] > 0) && (ray.depth < maxraydepth)) {
+        //initialized variables
+        Vector3d normal = hr.norm;
+        Vector3d incident = ray.dir.normalized();
+        //n1 and n2 are our ior for ray and hit record
+        double n1 = ray.ior;
+        double n2 = hr.fill[7];
+        //need to check if we are inside the object, if so flip
+        if (incident.dot(normal) > 0) {
+            std::swap(n1, n2);
+            normal = -1 * normal;
+        }
+        //compute the eta and cosine of the angle between them
+        double eta = n1 / n2;
+        double cosi = -incident.dot(normal);
+        //use snells law (1- n^2 (1 - cos^2)) for k
+        double k = 1 - eta * eta * (1 - cosi * cosi);
+        //if k is greater than or equal to zero, then we have hit the ray
+        //use refaction formula and offset slightly and eflect new ray
+        if (k >= 0) {
+            Vector3d refractDir = eta * incident + (eta * cosi - std::sqrt(k)) * normal;
+            refractDir.normalize();
+            Vector3d refractOrigin = hr.inter - normal * BIAS;
+            Ray refractRay(refractOrigin, refractDir, ray.depth + 1);
+            totalColor += hr.fill[6] * colorSet(refractRay);
+        }
+    }
+
     return totalColor;
 }

@@ -104,11 +104,9 @@ class Vector2d
     bool operator==(const Vector2d&) const;
     bool operator!=(const Vector2d&) const;
 
-
     //return member variables
     double x() const;
     double y() const;
-
 
     //computer graphics specific code
     //overloaded constructor based on projection

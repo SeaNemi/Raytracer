@@ -8,10 +8,11 @@
 
 //ray constructors
 Ray::Ray(){}
-Ray::Ray(const Vector3d& e, const Vector3d& d, int dep){
+Ray::Ray(const Vector3d& e, const Vector3d& d, int dep, double ir){
     eye = e;
     dir = d;
     depth = dep;
+    ior = ir;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

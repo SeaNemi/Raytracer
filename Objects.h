@@ -19,9 +19,11 @@
 class Ray{
     public:
         Ray();
-        Ray(const Vector3d&, const Vector3d&, int dep = 0);
+        //assume that the index of reflection is 1.0
+        Ray(const Vector3d&, const Vector3d&, int dep = 0, double ir = 1.0);
         Vector3d eye;
         Vector3d dir;
+        int ior;
         int depth;
 };
 
