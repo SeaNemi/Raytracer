@@ -1,5 +1,5 @@
 //William Whatley
-//Header file for Scene class
+//Scene Header file
 
 //header guards
 #ifndef SCENE_H
@@ -9,12 +9,12 @@
 #include "Objects.h"
 
 //libraries included
-#include <iostream>
+#include <algorithm>
 #include <fstream>
+#include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
-#include <algorithm>
 
 //enum used to determine what state the parser is in
 enum class State{
@@ -26,23 +26,23 @@ enum class State{
     PATCH
 };
 
-
-
 class Scene{
     public:
+        //constructors/operators
+        //not  having this assignment operator caused me more pain than you would ever know :(
         Scene();
         Scene(const std::string&);
-        void treeCount(Node* node, int& data);
-        Scene(const Scene& rhs);
+        Scene(const Scene&);
+        
+        //destructor and clear, recursiveClear private member function
         ~Scene();
+        void clear();
+        Scene& operator=(const Scene&);
+
+        //public code
         void setFile(const std::string&);
         void clearFile();
         bool parse();
-
-        //not  having this assignment operator caused me more pain
-        //than you would ever know :(
-        Scene& operator=(const Scene&);
-        void clear();
 
         //member variables
         Vector3d m_background;
@@ -52,19 +52,22 @@ class Scene{
         Node* m_root;
 
     private:
-        void setBackground(double, double, double);
-        void addLight(double, double, double);
-        void addSphere(double, double, double, double, const double*);
+        //helper functions
+        //for parsing and deletion
+        void recursiveClear(Node* node);
         bool parseNFF();
         bool parseObj();
-        void recursiveClear(Node* node);
+
+        //parser earclipping and earclipping helpers
         std::vector<Polygon*> earclip(const Polygon*);
         std::vector<Patch*> earclip(const Patch* currPatch);
         bool pointInTriangle(const Vector2d&, const Vector2d&, const Vector2d&, const Vector2d&);
         bool isClockwise(const std::vector<Vector2d>&);
-
-        //member variables
+        
+        //extra helpers and m_file member variable
+        void setBackground(double, double, double);
+        void addLight(double, double, double);
+        void addSphere(double, double, double, double, const double*);
         std::string m_file;
-
 };
 #endif

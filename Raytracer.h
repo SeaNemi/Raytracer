@@ -1,20 +1,19 @@
 //William Whatley
-
+//Raytracer header file
 #ifndef RAYTRACER_H
 #define RAYTRACER_H
 
 //includes the other file with the objects necessary for the scene
 #include "Scene.h"
 
-//libraries included
+//libraries includedand constant
 #include <cmath>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <limits>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
-#include <limits>
-
 const double BIAS = 1e-6;
 
 //used to determine which object is hit
@@ -29,11 +28,6 @@ class Raytracer{
     public:
         Raytracer(const Scene&);
         void createImage(const std::string&);
-        Vector3d colorSet(const Ray&);
-        bool isHit(Node*, const Ray&, Surface*&, Hit&, double, double&);
-        void worldSpace();
-        bool shadowTest(Ray&, double);
-        Vector3d localLight(const Ray&,  Surface*, Hit&);
         bool color;
         bool phong;
         bool stratified;
@@ -44,6 +38,12 @@ class Raytracer{
         int maxraydepth;
     
     private:
+        //helper functions and member variables private
+        bool isHit(Node*, const Ray&, Surface*&, Hit&, double, double&);
+        void worldSpace();
+        bool shadowTest(Ray&, double);
+        Vector3d localLight(const Ray&, Surface*, Hit&);
+        Vector3d colorSet(const Ray&);
         Scene m_scene;
         Vector3d vecW;
         Vector3d vecU;

@@ -1,11 +1,12 @@
 //William Whatley
 //matrix header file
+
 //Header guards
 #ifndef MATRIX_H
 #define MATRIX_H
 
+//library included and identity matrix
 #include <cmath>
-
 const double IDENTITY[3][3]={
     {1, 0, 0},
     {0, 1, 0},

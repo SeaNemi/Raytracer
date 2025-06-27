@@ -1,3 +1,5 @@
+//William Whatley
+//Matrix source file
 #include "matrix.h"
 
 ////////////////////////////////////////////////////////////
@@ -479,7 +481,6 @@ void Matrix3d::col(short index, const Vector3d& vec){
 Vector3d operator*(double a, const Vector3d& vec) {
     return vec * a;
 }
-
 Vector3d cross(const Vector3d& x, const Vector3d& y){
     return x.cross(y);
 }

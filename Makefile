@@ -6,7 +6,7 @@ CXX = g++
 CXXFLAGS = -std=c++11 -Wall -Wextra -O2
 
 # Source files
-SOURCES = Raytracer.cpp Objects.cpp Scene.cpp main.cpp matrix.cpp
+SOURCES =  matrix.cpp Objects.cpp Scene.cpp Raytracer.cpp main.cpp
 
 # Object files
 OBJECTS = $(SOURCES:.cpp=.o)

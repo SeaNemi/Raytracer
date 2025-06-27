@@ -1,18 +1,45 @@
 //William Whatley
-//Scene functions are here
+//Scene source file
 #include "Scene.h"
 
-//Constructor
+//Constructors
 Scene::Scene(){
     m_file = "NONE";
     m_root = nullptr;
     m_viewpoint = new Viewpoint();
 }
-//Overloaded constructor
 Scene::Scene(const std::string& file){
     m_file = file;
     m_root = nullptr;
     m_viewpoint = new Viewpoint();
+}
+Scene::Scene(const Scene& rhs){
+        m_file = rhs.m_file;
+        m_viewpoint = nullptr;
+        m_root = nullptr;
+        for (short i = 0; i < 3; i++) m_background[i] = rhs.m_background[i];
+        
+        //transfers over the lights
+        for(unsigned int i = 0; i < rhs.m_lights.size(); i++){
+            Light* light = new Light(rhs.m_lights[i]->coords.x(), rhs.m_lights[i]->coords.y(), rhs.m_lights[i]->coords.z());
+            m_lights.push_back(light);
+        }
+
+        //transfers over the surfaces
+        for(const auto& surface: rhs.m_surfaces) m_surfaces.push_back(surface->clone());
+        
+        //copies contects of m_viewpoint over
+        if(rhs.m_viewpoint){
+            m_viewpoint = new Viewpoint();
+            m_viewpoint->at = rhs.m_viewpoint->at;
+            m_viewpoint->from = rhs.m_viewpoint->from;
+            m_viewpoint->up = rhs.m_viewpoint->up;
+            m_viewpoint->angle = rhs.m_viewpoint->angle;
+            m_viewpoint->hither = rhs.m_viewpoint->hither;
+            for (short i = 0; i < 2; i++) m_viewpoint->res[i] = rhs.m_viewpoint->res[i];
+        }
+        //transfers the root
+        m_root = new Node(m_surfaces, 0, m_surfaces.size());
 }
 
 //Destructor
@@ -22,24 +49,70 @@ Scene::~Scene(){
 }
 
 void Scene::clear(){
-    //deletes based on whether or not it was created in the first place
-    for (Surface* surface : m_surfaces){
-        delete surface;
-    }
-
-
-    for (Light *light: m_lights){
-        delete light;
-    }
-
-    //clears for safety
+    //for loop clears the vectors then clears the container itself
+    for (Surface* surface : m_surfaces) delete surface;
+    for (Light *light: m_lights) delete light;
     m_surfaces.clear();
     m_lights.clear();
 
+    //clears everything else
     recursiveClear(m_root);
     delete m_viewpoint;
     m_viewpoint = nullptr;
 }
+
+//assignment operator
+Scene& Scene::operator=(const Scene& rhs){
+    if (this != &rhs){
+        clear();
+        m_file = rhs.m_file;
+        m_viewpoint = nullptr;
+        m_root = nullptr;
+        for (short i = 0; i < 3; i++) m_background[i] = rhs.m_background[i];
+
+        //transfers over the lights
+        for(unsigned int i = 0; i < rhs.m_lights.size(); i++){
+            Light* light = new Light(rhs.m_lights[i]->coords.x(), rhs.m_lights[i]->coords.y(), rhs.m_lights[i]->coords.z());
+            m_lights.push_back(light);
+        }
+
+        //transfers over the surfaces
+        for(const auto& surface: rhs.m_surfaces) m_surfaces.push_back(surface->clone());
+        
+        //copies contects of m_viewpoint over
+        if(rhs.m_viewpoint){
+            m_viewpoint = new Viewpoint();
+            m_viewpoint->at = rhs.m_viewpoint->at;
+            m_viewpoint->from = rhs.m_viewpoint->from;
+            m_viewpoint->up = rhs.m_viewpoint->up;
+            m_viewpoint->angle = rhs.m_viewpoint->angle;
+            m_viewpoint->hither = rhs.m_viewpoint->hither;
+            for (short i = 0; i < 2; i++) m_viewpoint->res[i] = rhs.m_viewpoint->res[i];
+        }
+        //transfers the root
+        m_root = new Node(m_surfaces, 0, m_surfaces.size());
+    }
+    return *this;
+}
+
+//sets new file
+void Scene::setFile(const std::string& file){
+    m_file = file;
+}
+//clears the current file saved
+void Scene::clearFile(){
+    m_file = "NONE";
+}
+//calls upon the parser
+bool Scene::parse(){
+    //if no file set up, then return
+    if(m_file == "NONE") return false;
+    return (m_file.substr(m_file.find_last_of(".") + 1) == "obj") ? parseObj() : parseNFF();
+}
+
+
+///////////////////////// PRIVATE FUNCTIONS /////////////////////////
+
 
 //recursiveClear
 //uses recursion to completely delete the tree, using postorder traversal
@@ -49,23 +122,6 @@ void Scene::recursiveClear(Node* node){
         recursiveClear(node->m_right);
         delete node;
     }
-}
-
-//sets new file
-void Scene::setFile(const std::string& file){
-    m_file = file;
-}
-
-//clears the current file saved
-void Scene::clearFile(){
-    m_file = "NONE";
-}
-
-//the parser itself
-bool Scene::parse(){
-    //if no file set up, then return
-    if(m_file == "None") return false;
-    return (m_file.substr(m_file.find_last_of(".") + 1) == "obj") ? parseObj() : parseNFF();
 }
 
 //parseNFF
@@ -126,9 +182,7 @@ bool Scene::parseNFF(){
                     //fills m_fill which will then be used for polygons
                     case 'f':
                         currState = State::DETERMINE;
-                        for (short i = 0; i < 8; i++){
-                            curr >> currFill[i];
-                        }
+                        for (short i = 0; i < 8; i++) curr >> currFill[i];
                         break;
                     default:
                         break;
@@ -152,7 +206,6 @@ bool Scene::parseNFF(){
                     double x, y, z;
                     curr >> x >> y >> z;
                     m_viewpoint->setAt(x, y, z);
-
                 }else if (word == "up"){
                     double x, y, z;
                     curr >> x >> y >> z;
@@ -171,7 +224,6 @@ bool Scene::parseNFF(){
                     int a, b;
                     curr >> a >> b;
                     m_viewpoint->setRes(a, b);
-
                     //state set back to normal since end of VIEWPOINT stream
                     currState = State::NORMAL;
                 }
@@ -185,9 +237,7 @@ bool Scene::parseNFF(){
                 //switches based on the token
                 switch(token){
                     case 'f':
-                        for (short i = 0; i < 8; i++){
-                            curr >> currFill[i];
-                        }
+                        for (short i = 0; i < 8; i++) curr >> currFill[i];
                         break;
                     //in case s, reads in the sphere
                     case 's':
@@ -205,18 +255,14 @@ bool Scene::parseNFF(){
                             //if the second character is a p, means that it is a patch
                             currState = State::PATCH;
                             currPatch = new Patch(verticies, currFill);
-                            if(verticies == 3){
-                                currPatch->isTriangle = true;
-                            }
+                            if(verticies == 3)currPatch->isTriangle = true;
                         }
                         else{
                             //else, it is just a regular polygon
                             curr >>  verticies;
                             currPolygon = new Polygon(verticies, currFill);
                             currState = State::POLYGON;
-                            if(verticies == 3){
-                                currPolygon->isTriangle = true;
-                            }
+                            if(verticies == 3)currPolygon->isTriangle = true;         
                         }
                     default:
                         break;
@@ -289,7 +335,6 @@ bool Scene::parseNFF(){
     return true;
 }
 
-
 bool Scene::parseObj(){
     /*
     //opens the io stream to read through the file
@@ -315,27 +360,6 @@ bool Scene::parseObj(){
     file.close();
     */
     return true;
-}
-
-//pointInTriangle
-//used for a point in triangle test
-bool Scene::pointInTriangle(const Vector2d& p, const Vector2d& a, const Vector2d& b, const Vector2d& c){
-    double alpha = ((b.y() - c.y()) * (p.x() - c.x()) + (c.x() - b.x()) * (p.y() - c.y())) / ((b.y() - c.y()) * (a.x() - c.x()) + (c.x() - b.x()) * (a.y() - c.y()));
-    double beta  = ((c.y() - a.y()) * (p.x() - c.x()) + (a.x() - c.x()) * (p.y() - c.y())) / ((b.y() - c.y()) * (a.x() - c.x()) + (c.x() - b.x()) * (a.y() - c.y()));
-    double gamma = 1.0 - alpha - beta;
-    return alpha >= 0 && beta >= 0 && gamma >= 0;
-}
-
-//isClockwise
-//determines orientation to ensure clockwise position
-bool Scene::isClockwise(const std::vector<Vector2d>& verts){
-    double sum = 0.0;
-    for (unsigned int i = 0; i < verts.size(); ++i) {
-        const Vector2d& a = verts[i];
-        const Vector2d& b = verts[(i + 1) % verts.size()];
-        sum += (b.x() - a.x()) * (b.y() + a.y());
-    }
-    return sum > 0.0; // CW if positive
 }
 
 
@@ -365,8 +389,7 @@ std::vector<Polygon*> Scene::earclip(const Polygon* currPoly){
 
     //3D vertices projected onto a 2D plane
     std::vector<Vector2d> vexes2d;
-    for (const auto& v : vertexes)
-        vexes2d.emplace_back(v, projectDir);
+    for (const auto& v : vertexes) vexes2d.emplace_back(v, projectDir);
 
     //ensure vertices are in counter-clockwise order since required by ear clipping
     if (isClockwise(vexes2d)) {
@@ -478,8 +501,7 @@ std::vector<Patch*> Scene::earclip(const Patch* currPatch) {
 
     //3D vertices projected onto a 2D plane
     std::vector<Vector2d> vexes2d;
-    for (const auto& v : vertexes)
-        vexes2d.emplace_back(v, projectDir);
+    for (const auto& v : vertexes) vexes2d.emplace_back(v, projectDir);
 
     //ensure vertices are in counter-clockwise order since required by ear clipping
     if (isClockwise(vexes2d)) {
@@ -505,7 +527,7 @@ std::vector<Patch*> Scene::earclip(const Patch* currPatch) {
 
             //check to see if the corner is convex
             double crossZ = (curr - prev).cross(next - curr);
-            if (crossZ <= 0) continue;  // Not convex, skip
+            if (crossZ <= 0) continue;  // Not convex, skip (bias of 1e-6 used)
 
             //check to see if any other vertex lies inside the triangle
             //done to prevent inappropriate clipping
@@ -576,64 +598,40 @@ std::vector<Patch*> Scene::earclip(const Patch* currPatch) {
     return result;
 }
 
+//pointInTriangle
+//used for a point in triangle test
+bool Scene::pointInTriangle(const Vector2d& p, const Vector2d& a, const Vector2d& b, const Vector2d& c){
+    double alpha = ((b.y() - c.y()) * (p.x() - c.x()) + (c.x() - b.x()) * (p.y() - c.y())) / ((b.y() - c.y()) * (a.x() - c.x()) + (c.x() - b.x()) * (a.y() - c.y()));
+    double beta  = ((c.y() - a.y()) * (p.x() - c.x()) + (a.x() - c.x()) * (p.y() - c.y())) / ((b.y() - c.y()) * (a.x() - c.x()) + (c.x() - b.x()) * (a.y() - c.y()));
+    double gamma = 1.0 - alpha - beta;
+    return alpha >= 0 && beta >= 0 && gamma >= 0;
+}
+
+//isClockwise
+//determines orientation to ensure clockwise position
+bool Scene::isClockwise(const std::vector<Vector2d>& verts){
+    double sum = 0.0;
+    for (unsigned int i = 0; i < verts.size(); ++i) {
+        const Vector2d& a = verts[i];
+        const Vector2d& b = verts[(i + 1) % verts.size()];
+        sum += (b.x() - a.x()) * (b.y() + a.y());
+    }
+    return sum > 0.0; // CW if positive
+}
+
+//setBackground
 void Scene::setBackground(double r, double g, double b){
     //vector created then set as the background
     Vector3d vector(r, g, b);
     m_background = vector;
 }
-
 //adds a light source to the m_lights vector
 void Scene::addLight(double x, double y, double z){
     Light* light = new Light(x, y, z);
     m_lights.push_back(light);
 }
-
 //adds a sphere to the m_sphere vector
 void Scene::addSphere(double x, double y, double z, double r, const double* fill){
     Sphere* sphere = new Sphere(x, y, z, r, fill);
     m_surfaces.push_back(sphere);
-}
-
-
-//assignment operator
-Scene& Scene::operator=(const Scene& rhs){
-    if (this != &rhs){
-        clear();
-
-        m_file = rhs.m_file;
-        m_viewpoint = nullptr;
-        m_root = nullptr;
-
-        for (short i = 0; i < 3; i++){
-            m_background[i] = rhs.m_background[i];
-        }
-
-        //transfers over the lights
-        for(unsigned int i = 0; i < rhs.m_lights.size(); i++){
-            Light* light = new Light(rhs.m_lights[i]->coords.x(), rhs.m_lights[i]->coords.y(), rhs.m_lights[i]->coords.z());
-            m_lights.push_back(light);
-        }
-
-
-        //transfers over the spheres
-        for(const auto& s : rhs.m_surfaces){
-            m_surfaces.push_back(s->clone());
-        }
-        //copies contects of m_viewpoint over
-        if(rhs.m_viewpoint){
-            m_viewpoint = new Viewpoint();
-            m_viewpoint->at = rhs.m_viewpoint->at;
-            m_viewpoint->from = rhs.m_viewpoint->from;
-            m_viewpoint->up = rhs.m_viewpoint->up;
-            m_viewpoint->angle = rhs.m_viewpoint->angle;
-            m_viewpoint->hither = rhs.m_viewpoint->hither;
-
-            for (short i = 0; i < 2; i++){
-                m_viewpoint->res[i] = rhs.m_viewpoint->res[i];
-            }
-        }
-        m_root = new Node(m_surfaces, 0, m_surfaces.size());
-    }
-
-    return *this;
 }
