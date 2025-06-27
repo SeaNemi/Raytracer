@@ -26,25 +26,13 @@ enum class State{
     PATCH
 };
 
-//Node class
-//private except only to binary tree
-class Node{
-    public:
-    bool boxIntersect(const Vector3d&, const Vector3d&, const Ray&, double, double);
-    void Node::surroundingBox(const Vector3d&, const Vector3d&, const Vector3d&, const Vector3d&, Vector3d&, Vector3d&);
-    //member variables
-    Node* m_left;
-    Node* m_right;
-    Surface* m_data;
-    Vector3d boxMin;
-    Vector3d boxMax;
 
-};
 
 class Scene{
     public:
         Scene();
         Scene(const std::string&);
+        void treeCount(Node* node, int& data);
         Scene(const Scene& rhs);
         ~Scene();
         void setFile(const std::string&);
@@ -61,6 +49,7 @@ class Scene{
         std::vector<Surface*> m_surfaces;
         std::vector<Light*> m_lights;
         Viewpoint* m_viewpoint;
+        Node* m_root;
 
     private:
         void setBackground(double, double, double);
@@ -68,6 +57,7 @@ class Scene{
         void addSphere(double, double, double, double, const double*);
         bool parseNFF();
         bool parseObj();
+        void recursiveClear(Node* node);
         std::vector<Polygon*> earclip(const Polygon*);
         std::vector<Patch*> earclip(const Patch* currPatch);
         bool pointInTriangle(const Vector2d&, const Vector2d&, const Vector2d&, const Vector2d&);

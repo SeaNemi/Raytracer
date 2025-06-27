@@ -2,74 +2,16 @@
 //Scene functions are here
 #include "Scene.h"
 
-//Node constructor
-//builds the node object
-Node::Node(std::vector<Surface*>& objects, unsigned int start, unsigned int end){
-    //determine count- if only one object then its the leaf
-    unsigned int count = end - start;
-    if (count == 1) {
-        object = objects[start];
-        object->getBounds(minBounds, maxBounds);
-    } else {
-        int axis = rand() % 3;
-        std::sort(objects.begin() + start, objects.begin() + end, [axis](Surface* a, Surface* b) {
-            Vector3d minA, maxA, minB, maxB;
-            a->getBounds(minA, maxA);
-            b->getBounds(minB, maxB);
-            return minA[axis] < minB[axis];
-        });
-
-        size_t mid = start + count / 2;
-        left = new Node(objects, start, mid);
-        right = new Node(objects, mid, end);
-
-        surroundingBox(left->minBounds, left->maxBounds, right->minBounds, right->maxBounds, minBounds, maxBounds);
-    }
-}
-
-Node::~Node() {
-    delete m_left;
-    delete m_right;
-}
-
-//boxIntersect
-//check to see if ray intersects with bounding box
-bool Node::boxIntersect(const Vector3d& min, const Vector3d& max, const Ray& ray, double tmin, double tmax){
-    for (short i = 0; i < 3; i++) {
-        //use the reciprocal of the direction and find intersection distances 
-        double recip = 1.0 / ray.dir[i];
-        double t0 = (min[i] - ray.eye[i]) * recip;
-        double t1 = (max[i] - ray.eye[i]) * recip;
-        if (recip < 0.0) std::swap(t0, t1);
-        //find the lesser values
-        tmin = (t0 > tmin) ? t0 : tmin;;
-        tmax = (t1 > tmax) ? tmax : t1;
-
-        //if the interval is logically inconsistent, return false
-        if (tmax <= tmin) return false;
-    }
-    //else if all 3 axes pass the test, return true
-    return true;
-}
-
-//surroundingBox
-//determines the bounding box
-void Node::surroundingBox(const Vector3d& min1, const Vector3d& max1, const Vector3d& min2, const Vector3d& max2, Vector3d& outMin, Vector3d& outMax){
-    //fmin and fmax used to prevent NaN errors
-    for (short i = 0; i < 3; i++) {
-        outMin[i] = std::fmin(min1[i], min2[i]);
-        outMax[i] = std::fmax(max1[i], max2[i]);
-    }
-}
-
 //Constructor
 Scene::Scene(){
     m_file = "NONE";
+    m_root = nullptr;
     m_viewpoint = new Viewpoint();
 }
 //Overloaded constructor
 Scene::Scene(const std::string& file){
     m_file = file;
+    m_root = nullptr;
     m_viewpoint = new Viewpoint();
 }
 
@@ -94,9 +36,19 @@ void Scene::clear(){
     m_surfaces.clear();
     m_lights.clear();
 
-
+    recursiveClear(m_root);
     delete m_viewpoint;
     m_viewpoint = nullptr;
+}
+
+//recursiveClear
+//uses recursion to completely delete the tree, using postorder traversal
+void Scene::recursiveClear(Node* node){
+    if (node != nullptr){
+        recursiveClear(node->m_left);
+        recursiveClear(node->m_right);
+        delete node;
+    }
 }
 
 //sets new file
@@ -331,12 +283,15 @@ bool Scene::parseNFF(){
         }
     }
 
-    //the parsing is then FINALLY done
+    //the parsing is then FINALLY done, then create the root
     file.close();
+    m_root = new Node(m_surfaces, 0, m_surfaces.size());
     return true;
 }
 
+
 bool Scene::parseObj(){
+    /*
     //opens the io stream to read through the file
     std::ifstream file(m_file);
     std::string line;
@@ -358,6 +313,7 @@ bool Scene::parseObj(){
     }
     //the parsing is then FINALLY done
     file.close();
+    */
     return true;
 }
 
@@ -646,6 +602,7 @@ Scene& Scene::operator=(const Scene& rhs){
 
         m_file = rhs.m_file;
         m_viewpoint = nullptr;
+        m_root = nullptr;
 
         for (short i = 0; i < 3; i++){
             m_background[i] = rhs.m_background[i];
@@ -675,6 +632,7 @@ Scene& Scene::operator=(const Scene& rhs){
                 m_viewpoint->res[i] = rhs.m_viewpoint->res[i];
             }
         }
+        m_root = new Node(m_surfaces, 0, m_surfaces.size());
     }
 
     return *this;

@@ -149,9 +149,9 @@ Vector3d Raytracer::colorSet(const Ray& ray){
     Surface* currSurface = nullptr;
     Hit hr;
 
-    //checks to see if a shape is hit
-    bool hit = isHit(ray, currSurface, hr);
-
+    double tmax = std::numeric_limits<double>::infinity();
+    bool hit = isHit(m_scene.m_root, ray, currSurface, hr, BIAS, tmax);
+    
     //if no hit occurs, return as it isn't useful
     //return based on color enabled or not
     if(!hit) return color ? m_scene.m_background : Vector3d(0,0,0);
@@ -182,15 +182,19 @@ Vector3d Raytracer::colorSet(const Ray& ray){
 //localLight
 //goes through the local light sources and determines the color vector
 Vector3d Raytracer::localLight(const Ray& ray, Surface* currSurface, Hit& hit){
-    //for loop goes through for each light source
+    //va
     Vector3d localColor;
+    Vector3d l, h;
+    Ray shadowRay;
+    Vector3d v = -1 * ray.dir.normalized();
+
+    //for loop goes through for each light source
     //colorFill depends on if color determined or not
     Vector3d colorfill= color ? Vector3d(hit.fill[0], hit.fill[1], hit.fill[2]) : Vector3d(1.0, 1.0, 1.0);
     for(unsigned int i = 0; i < m_scene.m_lights.size(); i++){
         //the three vectors for Lambert shading are set up
-        Vector3d l = (m_scene.m_lights[i]->coords - hit.inter).normalized();
-        Vector3d v = -1 * ray.dir.normalized();
-        Vector3d h = (l + v).normalized();
+        l = (m_scene.m_lights[i]->coords - hit.inter).normalized();
+        h = (l + v).normalized();
 
         //checks if the surface is a patch and that m_phong is being used
         if(phong && dynamic_cast<Patch*>(currSurface)){
@@ -201,7 +205,7 @@ Vector3d Raytracer::localLight(const Ray& ray, Surface* currSurface, Hit& hit){
         }   
 
         //shadow ray is created, and then is tested to see if the pt is in the shadow
-        Ray shadowRay = Ray((hit.inter + hit.norm * BIAS), l);
+        shadowRay = Ray((hit.inter + hit.norm * BIAS), l);
         double distance = (m_scene.m_lights[i]->coords - hit.inter).norm();
         //if shadow test is false, then update
         if (!shadows || !(shadowTest(shadowRay, distance))){
@@ -225,35 +229,33 @@ Vector3d Raytracer::localLight(const Ray& ray, Surface* currSurface, Hit& hit){
 //shadowTest
 //used to test if the shadow ray is represnted in the shadow
 bool Raytracer::shadowTest(Ray& ray, double distance){
-    Hit hit; //hit set up but is not needed in this case
-    //for loop goes through and determines if an intersection occurs
-    for(unsigned int i = 0; i < m_scene.m_surfaces.size(); i++){
-        //if an intersection occurs, then return true
-        double bias = BIAS;
-        if(m_scene.m_surfaces[i]->intersect(ray, bias, distance, hit))return true;
-    }
-    return false;
+    //hit and currSurface set up, but are not necessary in this case
+    Hit hit;
+    Surface* currSurface = nullptr;
+    //checks to see if any hits occur
+    return isHit(m_scene.m_root, ray, currSurface, hit, BIAS, distance);;
 }
 
 //isHit determines if an objects is hit or not, and determines the type if so
-bool Raytracer::isHit(const Ray& ray, Surface*& currSurface, Hit &hr){
-    //originally delcares the shape hit as nothing
-    bool state = false;
-
-    //min set as 0 and max as infinity to start
-    double min = 1e-6;
-    double max = std::numeric_limits<double>::infinity();
-    //goes through and sees if the ray hits any polygon
-    for (const auto& surface : m_scene.m_surfaces){
-        //if the verticies equals three, means we hit a triangle
-        if(surface->intersect(ray, min, max, hr)){
-            state = true;
-            currSurface = surface;
+bool Raytracer::isHit(Node* node, const Ray& ray, Surface*& currSurface, Hit& hr, double tmin, double& tmax){
+    //if nullptr or not within the box, return false
+    if (!node || !node->boxIntersect(node->m_min, node->m_max, ray, tmin, tmax)) return false;
+    
+    //if the node is within the box intersect and has data, then check
+    if (node->m_data) {
+        if (node->m_data->intersect(ray, tmin, tmax, hr)) {
+            currSurface = node->m_data;
             hr.raydepth = ray.depth;
             hr.view = ray.eye - hr.inter;
             hr.view.normalize();
+            return true;
         }
+        return false;
     }
-    //if it goes through without hitting anything, returns NOTHING
-    return state;
+
+    //else if no surface exists, check the children by using isHit
+    bool hitLeft = isHit(node->m_left, ray, currSurface, hr, tmin, tmax);
+    bool hitRight = isHit(node->m_right, ray, currSurface, hr, tmin, tmax);
+
+    return hitLeft || hitRight;
 }

@@ -15,7 +15,7 @@
 #include <sstream>
 #include <limits>
 
-const double BIAS = 1e-4;
+const double BIAS = 1e-6;
 
 //used to determine which object is hit
 enum class Shape{
@@ -30,7 +30,7 @@ class Raytracer{
         Raytracer(const Scene&);
         void createImage(const std::string&);
         Vector3d colorSet(const Ray&);
-        bool isHit(const Ray&, Surface*&, Hit&);
+        bool isHit(Node*, const Ray&, Surface*&, Hit&, double, double&);
         void worldSpace();
         bool shadowTest(Ray&, double);
         Vector3d localLight(const Ray&,  Surface*, Hit&);

@@ -8,12 +8,15 @@
 //What's included
 #include <iostream>
 #include "matrix.h"
+#include <algorithm>
 #include <string>
+#include <random>
 #include <limits>
 #include <vector>
 
 class Ray{
     public:
+        Ray();
         Ray(const Vector3d&, const Vector3d&, int dep = 0);
         Vector3d eye;
         Vector3d dir;
@@ -38,6 +41,7 @@ class Surface{
         virtual ~Surface();
         virtual bool intersect(const Ray&, double&, double&, Hit&) = 0;
         virtual Surface* clone() = 0;
+        virtual void getBounds(Vector3d&, Vector3d&) const = 0;
         double m_fill[8];
         bool isPatch;
 };
@@ -53,6 +57,7 @@ class Polygon: public Surface{
         void pushBackVector(const Vector3d&);
         Polygon& operator=(const Polygon&);
         bool intersect(const Ray&, double &, double &, Hit &) override;
+        void getBounds(Vector3d&, Vector3d&) const override;
         int m_verticies;
         std::vector<Vector3d> m_vertex;
 
@@ -85,6 +90,7 @@ class Sphere: public Surface{
         Sphere(double, double, double, double, const double*, bool pat = false);
         Sphere& operator=(const Sphere&);
         bool intersect(const Ray&, double&, double&, Hit&) override;
+        void getBounds(Vector3d&, Vector3d&) const override;
         Surface* clone();
 
         //member variables
@@ -127,6 +133,26 @@ class Viewpoint{
         double angle;
         double hither;
         double res[2];
+};
+
+//Node class
+//private except only to binary tree
+class Node{
+    public:
+    Node(std::vector<Surface*>&, unsigned int, unsigned int);
+    ~Node();
+    bool boxIntersect(const Vector3d&, const Vector3d&, const Ray&, double, double);
+    void surroundingBox(const Vector3d&, const Vector3d&, const Vector3d&, const Vector3d&, Vector3d&, Vector3d&);
+    bool compare(Surface*, Surface*, short);
+    unsigned int nelement(std::vector<Surface*>&, unsigned int, unsigned int, short);
+    void quickselect(std::vector<Surface*>&, unsigned int, unsigned int, unsigned int, short);
+    //member variables
+    Node* m_left;
+    Node* m_right;
+    Surface* m_data;
+    Vector3d m_min;
+    Vector3d m_max;
+
 };
 
 #endif
