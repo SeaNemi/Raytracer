@@ -8,7 +8,7 @@
 
 //constructors
 Vector3d::Vector3d(){
-    m_x = m_y = m_z = 0;
+    m_x = m_y = m_z = 0; 
 }
 Vector3d::Vector3d(double a, double b, double c){
     m_x = a;
