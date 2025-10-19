@@ -20,8 +20,8 @@ Ray::Ray(const Vector3d& e, const Vector3d& d, int dep, double ir){
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 //added this so that way the Raytracer can actually read it
-Hit::Hit(){}
-Hit::Hit(double to,double a,double b,double g, const Vector3d& inte, const Vector3d& nor, const Vector3d& vie,  int depth){
+Hit::Hit()= default;
+Hit::Hit(const double to, const double a, const double b, const double g, const Vector3d& inte, const Vector3d& nor, const Vector3d& vie, const int depth){
     t = to;
     alpha = a;
     beta = b;
@@ -43,15 +43,15 @@ void Hit::transfer(const double *fil){
 
 //Surface destructor
 //needed for destruction of child classes
-Surface::~Surface(){}
+Surface::~Surface()= default;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////// POLYGON CLASS /////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Constructors for Polygon
-Polygon::Polygon(){}
-Polygon::Polygon(int verticies, const double *fill, bool tri, bool pat){
+Polygon::Polygon()= default;
+Polygon::Polygon(const int verticies, const double *fill, const bool tri, const bool pat){
     m_verticies = verticies;
     for (short i = 0; i < 8; i++) m_fill[i] = fill[i];
     isTriangle = tri;
@@ -68,7 +68,7 @@ Polygon::Polygon(const Polygon& rhs){
 }
 
 //destructor deletes the vertex sides
-Polygon::~Polygon(){}
+Polygon::~Polygon()= default;
 
 //assignment operator
 Polygon& Polygon::operator=(const Polygon& rhs){
@@ -96,21 +96,21 @@ bool Polygon::intersect(const Ray& ray, double &min, double &max, Hit &hr){
         //first matrix set up is matrix a
         Matrix3d matrixA;
         //the columns are then set based on the book
-        matrixA.col(0, (m_vertex[0] - m_vertex[1]));
-        matrixA.col(1, (m_vertex[0] - m_vertex[2]));
+        matrixA.col(0, (m_vertex[0]-m_vertex[1]));
+        matrixA.col(1, (m_vertex[0]-m_vertex[2]));
         matrixA.col(2, ray.dir);
 
         //determinant taken
-        double detA = matrixA.determinant();
+        const double detA = matrixA.determinant();
         if (detA == 0)return false;
         
         //first value to be solved for is t
         //need to create matrix and then divide
         Matrix3d matrixT;
-        matrixT.col(0, (m_vertex[0] - m_vertex[1]));
-        matrixT.col(1, (m_vertex[0] - m_vertex[2]));
-        matrixT.col(2, (m_vertex[0] - ray.eye));
-        double t = matrixT.determinant() / detA;
+        matrixT.col(0, (m_vertex[0]-m_vertex[1]));
+        matrixT.col(1, (m_vertex[0]-m_vertex[2]));
+        matrixT.col(2, (m_vertex[0]-ray.eye));
+        const double t = matrixT.determinant() / detA;
 
         //that is then compared to the limits
         if ((t < min) || (t > max)) return false;
@@ -118,20 +118,20 @@ bool Polygon::intersect(const Ray& ray, double &min, double &max, Hit &hr){
         //next need to solve for upsilon
         //next to be solved for is matrixUpsilon
         Matrix3d matrixUpsilon;
-        matrixUpsilon.col(0, (m_vertex[0] - m_vertex[1]));
-        matrixUpsilon.col(1, (m_vertex[0] - ray.eye));
+        matrixUpsilon.col(0, (m_vertex[0]-m_vertex[1]));
+        matrixUpsilon.col(1, (m_vertex[0]-ray.eye));
         matrixUpsilon.col(2, ray.dir);
-        double upsilon = matrixUpsilon.determinant() / detA;
+        const double upsilon = matrixUpsilon.determinant() / detA;
 
         //then we check if it is valid
         if ((upsilon < 0) || (upsilon > 1))return false;
 
         //finally we need to solve for beta
         Matrix3d matrixBeta;
-        matrixBeta.col(0, (m_vertex[0] - ray.eye));
-        matrixBeta.col(1, (m_vertex[0] - m_vertex[2]));
+        matrixBeta.col(0, (m_vertex[0]-ray.eye));
+        matrixBeta.col(1, (m_vertex[0]-m_vertex[2]));
         matrixBeta.col(2, ray.dir);
-        double beta = matrixBeta.determinant() / detA;
+        const double beta = matrixBeta.determinant() / detA;
 
         //we then compare beta and see if it is valid
         //if it is, that means we have indeed hit a triangle
@@ -141,69 +141,67 @@ bool Polygon::intersect(const Ray& ray, double &min, double &max, Hit &hr){
         max = t;
         hr.t = t; 
         hr.inter = ray.eye + (t * ray.dir);
-        hr.norm = (m_vertex[0] - m_vertex[1]).cross((m_vertex[0] - m_vertex[2]));
+        hr.norm = (m_vertex[0]-m_vertex[1]).cross((m_vertex[0]-m_vertex[2]));
         hr.norm.normalize();
-        hr.alpha = 1.0 - beta - upsilon;
+        hr.alpha = 1.0-beta-upsilon;
         hr.beta = beta;
         hr.gamma = upsilon;
         return true;
-    }else{
-        //initializes projectDirection and creates n
-        int projectDir;
-        Vector3d n = (m_vertex[1]- m_vertex[0]).cross(m_vertex[2] - m_vertex[0]);
-        n.normalize();
-        double t = -(ray.eye.dot(n) - m_vertex[0].dot(n)) / (ray.dir.dot(n));
-        if (t < min || t > max) return false;
-        Vector3d p= ray.eye + t*ray.dir;
-        
-        //determines which axis to project onto
-        //choose largest axis for stability
-        if (std::fabs(n[0]) > std::fabs(n[1]) && std::fabs(n[0]) > std::fabs(n[2])) projectDir = 0;
-        else if (std::fabs(n[1]) > std::fabs(n[2])) projectDir = 1;
-        else projectDir = 2;
-    
-        //creates two projected vector
-        Vector2d p2(p, projectDir);
-        Vector2d bbMin(m_vertex[0], projectDir);
-
-        Vector2d bbMax = bbMin;
-        //computes the bounding box for the 2d
-        for (unsigned int i=1; i<m_vertex.size(); i++) {
-            Vector2d v(m_vertex[i], projectDir);
-            if (v[0] < bbMin[0]) bbMin[0] = v[0];
-            if (v[0] > bbMax[0]) bbMax[0] = v[0];
-            if (v[1] < bbMin[1]) bbMin[1] = v[1];
-            if (v[1] > bbMax[1]) bbMax[1] = v[1];
-        }
-        //reject based on bounding box
-        if (p2[0] < bbMin[0]) return false;
-        if (p2[1] < bbMin[1]) return false;
-        if (p2[0] > bbMax[0]) return false;
-        if (p2[1] > bbMax[1]) return false;
-        Vector2d dir(std::sqrt(2), std::sqrt(2));
-        int count = 0;
-
-        //for loop goes through each edge of the polygon
-        for (unsigned int i=0; i<m_vertex.size(); i++) {
-            Vector2d a(m_vertex[i], projectDir);
-            Vector2d b(m_vertex[(i+1) % m_vertex.size()], projectDir);
-            Vector2d ab = b-a;
-            double denom = dir.cross(ab);
-            Vector2d ap2(a-p2);
-            double t2 = ap2.cross(ab/denom);
-            if (t2 < 0.0) continue;
-            double alpha = ap2.cross(dir / denom);
-            if (alpha > 0.0 && alpha < 1.0) count++;
-        }
-
-        //if count is even, means that polygon exited and entered equal amount of times, thus point outside
-        if (count % 2 == 0) return false;
-        //update info if true
-        hr.t = t;
-        hr.inter = p;
-        hr.norm = n;
-        return true;
     }
+    //initializes projectDirection and creates n
+    int projectDir;
+    Vector3d n = (m_vertex[1]-m_vertex[0]).cross(m_vertex[2]-m_vertex[0]);
+    n.normalize();
+    const double t = -(ray.eye.dot(n)-m_vertex[0].dot(n))/(ray.dir.dot(n));
+    if (t<min||t>max) return false;
+    const Vector3d p= ray.eye+t*ray.dir;
+    
+    //determines which axis to project onto
+    //choose largest axis for stability
+    if (std::fabs(n[0]) > std::fabs(n[1]) && std::fabs(n[0]) > std::fabs(n[2])) projectDir = 0;
+    else if (std::fabs(n[1]) > std::fabs(n[2])) projectDir = 1;
+    else projectDir = 2;
+
+    //creates two projected vector
+    Vector2d p2(p, projectDir);
+    Vector2d bbMin(m_vertex[0], projectDir);
+
+    Vector2d bbMax = bbMin;
+    //computes the bounding box for the 2d
+    for (unsigned int i=1; i<m_vertex.size(); i++) {
+        Vector2d v(m_vertex[i], projectDir);
+        if (v[0] < bbMin[0]) bbMin[0] = v[0];
+        if (v[0] > bbMax[0]) bbMax[0] = v[0];
+        if (v[1] < bbMin[1]) bbMin[1] = v[1];
+        if (v[1] > bbMax[1]) bbMax[1] = v[1];
+    }
+    //reject based on bounding box
+    if (p2[0] < bbMin[0]) return false;
+    if (p2[1] < bbMin[1]) return false;
+    if (p2[0] > bbMax[0]) return false;
+    if (p2[1] > bbMax[1]) return false;
+    Vector2d dir(std::sqrt(2), std::sqrt(2));
+    int count = 0;
+
+    //for loop goes through each edge of the polygon
+    for (unsigned int i=0; i<m_vertex.size(); i++) {
+        Vector2d a(m_vertex[i], projectDir);
+        Vector2d b(m_vertex[(i+1) % m_vertex.size()], projectDir);
+        Vector2d ab = b-a;
+        const double denom = dir.cross(ab);
+        Vector2d ap2(a-p2);
+        if (ap2.cross(ab/denom) < 0.0) continue;
+        const double alpha = ap2.cross(dir/denom);
+        if (alpha > 0.0 && alpha < 1.0) count++;
+    }
+
+    //if count is even, means that polygon exited and entered equal amount of times, thus point outside
+    if (count % 2 == 0) return false;
+    //update info if true
+    hr.t = t;
+    hr.inter = p;
+    hr.norm = n;
+    return true;
 }
 
 //getBounds
@@ -261,9 +259,9 @@ Surface* Patch::clone(){
 //interpolate
 //smoothly shades the patches
 Vector3d Patch::interpolate(const Hit& hit){
-    //Vector3d normal = (1 - hit.beta - hit.gamma) * *m_normal[0] + hit.beta * *m_normal[1] + hit.gamma * *m_normal[2];
+    //Vector3d normal = (1-hit.beta-hit.gamma) * *m_normal[0] + hit.beta * *m_normal[1] + hit.gamma * *m_normal[2];
     Vector3d vec;
-    vec = (1 - hit.beta - hit.gamma) * m_normal[0] + hit.beta * m_normal[1] + hit.gamma * m_normal[2];
+    vec = (1-hit.beta-hit.gamma) * m_normal[0] + hit.beta * m_normal[1] + hit.gamma * m_normal[2];
     return vec;
 }
 
@@ -318,15 +316,15 @@ Surface* Sphere::clone(){
 bool Sphere::intersect(const Ray& ray, double &min, double &max, Hit &hr){
     //solving for determinant
     //a is direction dot direction
-    Vector3d vector = ray.eye - coords;
+    Vector3d vector = ray.eye-coords;
     Vector3d direction = ray.dir;
     double a = direction.squaredNorm();
-    //b is direction dot eye - coords
+    //b is direction dot eye-coords
     double b = direction.dot(vector);
-    //c is eye - coords squared, minus radius squared
+    //c is eye-coords squared, minus radius squared
     double c = vector.squaredNorm()- (radius * radius);
     //first need to solve for discriminant to see if valid
-    double discriminant = (b * b) - (a * c);
+    double discriminant = (b * b)-(a * c);
 
     //if discriminant is zero, then return false, else a sphere is hit
     if (discriminant < 0) return false;
@@ -336,7 +334,7 @@ bool Sphere::intersect(const Ray& ray, double &min, double &max, Hit &hr){
     //roots calculated
     double ans = std::sqrt(discriminant);
     root1 = ((-1 * b) + ans)/(a);
-    root2 = ((-1 * b) - ans)/(a);
+    root2 = ((-1 * b)-ans)/(a);
     //choose appopriate root
     double t = ((root1 < 0) || ((root2 > 0) && (root2 < root1))) ? root2 : root1;
     //check that t is in the valid range
@@ -344,7 +342,7 @@ bool Sphere::intersect(const Ray& ray, double &min, double &max, Hit &hr){
     max = t;
     hr.t = t;
     hr.inter = ray.eye + (t*ray.dir);
-    hr.norm = ((hr.inter - coords) / radius);
+    hr.norm = ((hr.inter-coords) / radius);
     return true;
 }
 
@@ -352,7 +350,7 @@ bool Sphere::intersect(const Ray& ray, double &min, double &max, Hit &hr){
 //based on radius of the sphere
 void Sphere::getBounds(Vector3d& min, Vector3d& max) const{
     Vector3d r(radius, radius, radius);
-    min = coords - r;
+    min = coords-r;
     max = coords + r;
 }
 
@@ -369,7 +367,7 @@ Node::Node(std::vector<Surface*>& objects, unsigned int start, unsigned int end)
     m_data = nullptr; 
 
     //if count is equal to one, means base case and is the leaf node
-    unsigned int count = end - start;
+    unsigned int count = end-start;
     if (count == 1) {
         m_data = objects[start];
         m_data->getBounds(m_min, m_max);
@@ -392,14 +390,14 @@ Node::Node(std::vector<Surface*>& objects, unsigned int start, unsigned int end)
         }
         //determines which axis to use based on which has longer 
         //in edge case where it need to go around, it is accounted for
-        Vector3d spread = cMax - cMin;
+        Vector3d spread = cMax-cMin;
         short axis = (spread[0] > spread[1] && spread[0] > spread[2]) ? 0 : ((spread[1] > spread[2]) ? 1 : 2);
         if (spread[axis] == 0) axis = (axis + 1) % 3; // handle flat axes
 
         //use quick select to get a rough estimate of a middle partition
         //done to attempt to save some runtime rather than sorting each time
         unsigned int mid = start + count / 2;
-        quickselect(objects, start, end - 1, mid, axis);
+        quickselect(objects, start, end-1, mid, axis);
         //now recursively create the nodes, then create the surrounding box
         m_left = new Node(objects, start, mid);
         m_right = new Node(objects, mid, end);
@@ -414,8 +412,8 @@ bool Node::boxIntersect(const Vector3d& min, const Vector3d& max, const Ray& ray
     for (short i = 0; i < 3; i++) {
         //use the reciprocal of the direction and find intersection distances 
         double recip = 1.0 / ray.dir[i];
-        double t0 = (min[i] - ray.eye[i]) * recip;
-        double t1 = (max[i] - ray.eye[i]) * recip;
+        double t0 = (min[i]-ray.eye[i]) * recip;
+        double t1 = (max[i]-ray.eye[i]) * recip;
         if (recip < 0.0) std::swap(t0, t1);
         //find the lesser values
         tmin = (t0 > tmin) ? t0 : tmin;;
@@ -476,7 +474,7 @@ void Node::quickselect(std::vector<Surface*>& surfaces, unsigned int start, unsi
         } else if (pivot < mid) {
             start = pivot + 1;
         } else {
-            end = pivot - 1;
+            end = pivot-1;
         }
     }
 }

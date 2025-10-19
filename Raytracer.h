@@ -41,7 +41,7 @@ class Raytracer{
         //helper functions and member variables private
         bool isHit(Node*, const Ray&, Surface*&, Hit&, double, double&);
         void worldSpace();
-        bool shadowTest(Ray&, double);
+        bool shadowTest(const Ray&, double);
         Vector3d localLight(const Ray&, Surface*, Hit&);
         Vector3d colorSet(const Ray&);
         Scene m_scene;

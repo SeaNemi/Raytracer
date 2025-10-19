@@ -50,8 +50,8 @@ Scene::~Scene(){
 
 void Scene::clear(){
     //for loop clears the vectors then clears the container itself
-    for (Surface* surface : m_surfaces) delete surface;
-    for (Light *light: m_lights) delete light;
+    for (const Surface* surface : m_surfaces) delete surface;
+    for (const Light *light: m_lights) delete light;
     m_surfaces.clear();
     m_lights.clear();
 
@@ -133,9 +133,7 @@ bool Scene::parseNFF(){
 
     //if the file can't be opened, return
     if(!file.is_open()) return false;
-
     State currState = State::NORMAL;
-
     //used to determine polygons and fill type
     int verticies;
     int counter = 0;
@@ -154,9 +152,7 @@ bool Scene::parseNFF(){
             //thus, parses for beginning letter tokens
             case State::NORMAL:
                 curr >> word;
-
                 token = word[0];
-
                 //switch statement determines what the token is
                 switch(token){
                     //in case b, three doubles are read in
@@ -277,13 +273,13 @@ bool Scene::parseNFF(){
                 //if all verticies are read in, then the state goes
                 //back to normal, and the polygon is then added
                 //to the vector of polygons
-                if ((counter == verticies)){
+                if (counter == verticies){
                     //if triangle, skip check
                     if(currPolygon->isTriangle) m_surfaces.push_back(new Polygon(*currPolygon));
                     //else, perform ear clipping algorithm
                     else{
                         std::vector<Polygon*> clipped = earclip(currPolygon);
-                        for (unsigned int i = 0; i < clipped.size(); i++) m_surfaces.push_back(clipped[i]);                        
+                        for(unsigned int i = 0; i < clipped.size(); i++) m_surfaces.push_back(clipped[i]);
                     }            
                     //now reset the state and delete the ptr
                     currState = State::DETERMINE;
@@ -306,7 +302,7 @@ bool Scene::parseNFF(){
                 //if all verticies are read in, then the state goes
                 //back to normal, and the polygon is then added
                 //to the vector of polygons
-                if ((counter == verticies)){
+                if (counter == verticies){
                     //if triangle, skip check
                     if(currPatch->isTriangle) m_surfaces.push_back(new Patch(*currPatch));
                     //else, perform ear clipping algorithm
@@ -321,10 +317,6 @@ bool Scene::parseNFF(){
                         currPatch = nullptr;
                     }
                 }
-                break;
-            //default shouldn't be hit but exists for safety
-            default:
-                currState = State::NORMAL;
                 break;
         }
     }

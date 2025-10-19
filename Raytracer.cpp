@@ -40,11 +40,11 @@ void Raytracer::createImage(const std::string& output){
                 for(int jy = 0; jy < samples; jy++){
                     for(int jx = 0; jx < samples; jx++){
                         //offsets
-                        double ox = (jx + (double)rand() / RAND_MAX) / samples;
-                        double oy = (jy + (double)rand() / RAND_MAX) / samples;
+                        const double ox = (jx + (double)rand() / RAND_MAX) / samples;
+                        const double oy = (jy + (double)rand() / RAND_MAX) / samples;
                         //ray direction calculated with jittering
-                        double x = -planeWidth/2 + pixWidth * (px + ox);
-                        double y = planeHeight/2 - pixHeight * (py + oy);
+                        const double x = -planeWidth/2 + pixWidth * (px + ox);
+                        const double y = planeHeight/2 - pixHeight * (py + oy);
                         //direction set
                         Vector3d direction;
                         direction = (-1 * magD * vecW);
@@ -90,18 +90,12 @@ void Raytracer::createImage(const std::string& output){
                 Vector3d color = colorSet(ray);
 
                 //index is used to determine what pixels go where
-                int index = (py * WIDTH + px) * 3;
-
-                //set the colors
-                double r = color[0];
-                double g = color[1];
-                double b = color[2];
-
+                const int index = (py * WIDTH + px) * 3;
                 //now type cast and add to the array
                 //in consecutive order to account for red blue and green values
-                pixels[index] = static_cast<unsigned char>(std::min(255.0, std::max(0.0, r * 255)));
-                pixels[index + 1] = static_cast<unsigned char>(std::min(255.0, std::max(0.0, g * 255)));
-                pixels[index + 2] = static_cast<unsigned char>(std::min(255.0, std::max(0.0, b * 255)));
+                pixels[index] = static_cast<unsigned char>(std::min(255.0, std::max(0.0, color[0] * 255)));
+                pixels[index + 1] = static_cast<unsigned char>(std::min(255.0, std::max(0.0, color[1] * 255)));
+                pixels[index + 2] = static_cast<unsigned char>(std::min(255.0, std::max(0.0, color[2] * 255)));
             }
         }
     }
@@ -146,19 +140,17 @@ bool Raytracer::isHit(Node* node, const Ray& ray, Surface*& currSurface, Hit& hr
         return false;
     }
     //else if no surface exists, check the children by using isHit
-    bool hitLeft = isHit(node->m_left, ray, currSurface, hr, tmin, tmax);
-    bool hitRight = isHit(node->m_right, ray, currSurface, hr, tmin, tmax);
-    return hitLeft || hitRight;
+    return isHit(node->m_left, ray, currSurface, hr, tmin, tmax) || isHit(node->m_right, ray, currSurface, hr, tmin, tmax);
 }
 
 //shadowTest
 //used to test if the shadow ray is represnted in the shadow
-bool Raytracer::shadowTest(Ray& ray, double distance){
+bool Raytracer::shadowTest(const Ray& ray, double distance){
     //hit and currSurface set up, but are not necessary in this case
     Hit hit;
     Surface* currSurface = nullptr;
     //checks to see if any hits occur
-    return isHit(m_scene.m_root, ray, currSurface, hit, BIAS, distance);;
+    return isHit(m_scene.m_root, ray, currSurface, hit, BIAS, distance);
 }
 
 //localLight
@@ -168,11 +160,12 @@ Vector3d Raytracer::localLight(const Ray& ray, Surface* currSurface, Hit& hit){
     Vector3d l, h;
     Ray shadowRay;
     Vector3d v = -1 * ray.dir.normalized();
-    //for loop goes through for each light source
     //colorFill depends on if color determined or not
     Vector3d colorfill= color ? Vector3d(hit.fill[0], hit.fill[1], hit.fill[2]) : Vector3d(1.0, 1.0, 1.0);
-    
-    for(unsigned int i = 0; i < m_scene.m_lights.size(); i++){
+
+    //for loop goes through for each light source
+    const unsigned int lightSize = m_scene.m_lights.size();;
+    for(unsigned int i = 0; i < lightSize; i++){
         //the three vectors for Lambert shading are set up
         l = (m_scene.m_lights[i]->coords - hit.inter).normalized();
         h = (l + v).normalized();
@@ -189,19 +182,17 @@ Vector3d Raytracer::localLight(const Ray& ray, Surface* currSurface, Hit& hit){
         //if shadow test is false, then update
         if (!shadows || !(shadowTest(shadowRay, distance))){
             //diffuse and specular are set
-            double diffuse = (hit.norm.dot(l) > 0.0) ? hit.norm.dot(l) : 0.0;
-            double max = (hit.norm.dot(h) > 0.0) ? hit.norm.dot(h) : 0.0;
-            double specular = pow(max, hit.fill[5]);
+            const double diffuse = (hit.norm.dot(l) > 0.0) ? hit.norm.dot(l) : 0.0;
+            const double max = (hit.norm.dot(h) > 0.0) ? hit.norm.dot(h) : 0.0;
+            const double specular = pow(max, hit.fill[5]);
             //intensity and colorfill set and then used to help calculate color
-            double intensity = (1.0 / std::sqrt(m_scene.m_lights.size()));
-
+            const double intensity = (1.0 / std::sqrt(lightSize));
             //update the colors
             localColor[0] += ((hit.fill[3] * colorfill[0] * diffuse) + (hit.fill[4] * specular)) * intensity;
             localColor[1] += ((hit.fill[3] * colorfill[1] * diffuse) + (hit.fill[4] * specular)) * intensity;
             localColor[2] += ((hit.fill[3] * colorfill[2] * diffuse) + (hit.fill[4] * specular)) * intensity;
         }
     }
-
     return localColor;
 }
 
@@ -211,7 +202,7 @@ Vector3d Raytracer::colorSet(const Ray& ray){
     Hit hr;
     Surface* currSurface = nullptr;
     double tmax = std::numeric_limits<double>::infinity();
-    bool hit = isHit(m_scene.m_root, ray, currSurface, hr, BIAS, tmax); 
+    const bool hit = isHit(m_scene.m_root, ray, currSurface, hr, BIAS, tmax);
     
     //if no hit occurs, return as it isn't useful
     //return based on color enabled or not
@@ -220,16 +211,15 @@ Vector3d Raytracer::colorSet(const Ray& ray){
     //local color is determined by the localLight
     Vector3d totalColor = localLight(ray, currSurface, hr);
 
-    //if the m_fill[4] of the current surface (which corresponds to ks)
-    //or raydepth is less than 5, then continue recursion
-    if(reflections && (hr.fill[4] > 0) && !(ray.depth > 5)){
+    //if the m_fill[4] of the current surface (which corresponds to ks) or raydepth is less than 5, then continue recursion
+    if(reflections && hr.fill[4] > 0 && ray.depth <= 5){
         //eye and direction are set up
-        Vector3d eye = (hr.inter + hr.norm * BIAS);
+        const Vector3d eye = (hr.inter + hr.norm * BIAS);
         Vector3d direction = ray.dir - 2 * (ray.dir.dot(hr.norm)) * hr.norm;
         direction.normalize();
         
         //reflectionRay then set up and used for recursion
-        Ray reflectionRay(eye, direction, (ray.depth + 1));
+        const Ray reflectionRay(eye, direction, (ray.depth + 1));
         totalColor += hr.fill[4] * colorSet(reflectionRay);
     }
     if (reflections && (hr.fill[6] > 0) && (ray.depth < maxraydepth)) {
@@ -245,20 +235,19 @@ Vector3d Raytracer::colorSet(const Ray& ray){
             normal = -1 * normal;
         }
         //compute the eta and cosine of the angle between them
-        double eta = n1 / n2;
-        double cosi = -incident.dot(normal);
+        const double eta = n1 / n2;
+        const  double cosi = -incident.dot(normal);
         //use snells law (1- n^2 (1 - cos^2)) for k
-        double k = 1 - eta * eta * (1 - cosi * cosi);
+        const double k = 1 - eta * eta * (1 - cosi * cosi);
         //if k is greater than or equal to zero, then we have hit the ray
-        //use refaction formula and offset slightly and eflect new ray
+        //use refaction formula and offset slightly and reflect new ray
         if (k >= 0) {
             Vector3d refractDir = eta * incident + (eta * cosi - std::sqrt(k)) * normal;
             refractDir.normalize();
-            Vector3d refractOrigin = hr.inter - normal * BIAS;
-            Ray refractRay(refractOrigin, refractDir, ray.depth + 1);
+            const Vector3d refractOrigin = hr.inter - normal * BIAS;
+            const Ray refractRay(refractOrigin, refractDir, ray.depth + 1);
             totalColor += hr.fill[6] * colorSet(refractRay);
         }
     }
-
     return totalColor;
 }

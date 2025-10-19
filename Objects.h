@@ -32,12 +32,12 @@ class Hit{
         Hit();
         Hit(double,double,double,double, const Vector3d&, const Vector3d&, const Vector3d&, int);
         void transfer(const double *fil);
-        double t, alpha, beta, gamma;
+        double t{}, alpha{}, beta{}, gamma{};
         Vector3d inter; //determines intersection
         Vector3d norm; //normalized perpendicular to intersection pt
         Vector3d view; //determines the viewing direction
-        int raydepth; //determines the depth
-        double fill[8];
+        int raydepth{}; //determines the depth
+        double fill[8]{};
 };
 
 class Surface{
@@ -68,9 +68,9 @@ class Polygon: public Surface{
         //other functions and member variables
         void pushBackVector(const Vector3d&);
         void addVertex(double x, double y, double z);
-        int m_verticies;
+        int m_verticies{};
         std::vector<Vector3d> m_vertex;
-        bool isTriangle;
+        bool isTriangle{};
 };
 
 //patch class
